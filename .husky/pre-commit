@@ -1,0 +1,36 @@
+#!/usr/bin/env sh
+
+# En Windows, git corre los hooks con su propio PATH y no siempre encuentra pnpm,
+# que el instalador deja en %LOCALAPPDATA%\pnpm. Lo buscamos antes de rendirnos.
+if ! command -v pnpm >/dev/null 2>&1; then
+  for candidato in "$PNPM_HOME" "$LOCALAPPDATA/pnpm" "$HOME/AppData/Local/pnpm"; do
+    if [ -n "$candidato" ] && { [ -x "$candidato/pnpm.exe" ] || [ -x "$candidato/pnpm" ]; }; then
+      PATH="$candidato:$PATH"
+      export PATH
+      break
+    fi
+  done
+fi
+
+# 1. Búsqueda de secretos antes de que nada salga del equipo.
+#    Ver docs/SEGURIDAD.md §2.1
+if command -v gitleaks >/dev/null 2>&1; then
+  gitleaks protect --staged --redact --verbose || {
+    echo ""
+    echo "  Se detectó un posible secreto en los archivos preparados."
+    echo "  No hagas commit. Si el valor es real, ROTALO además de borrarlo."
+    exit 1
+  }
+else
+  echo ""
+  echo "  ADVERTENCIA: gitleaks no está instalado, no se revisaron secretos."
+  echo "  Instalar:  winget install gitleaks"
+  echo ""
+fi
+
+# 2. Formato de los archivos preparados
+if command -v pnpm >/dev/null 2>&1; then
+  pnpm exec lint-staged
+else
+  echo "  ADVERTENCIA: pnpm no está en el PATH, no se aplicó formato."
+fi

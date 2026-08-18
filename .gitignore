@@ -1,0 +1,53 @@
+# Dependencias
+node_modules/
+.pnpm-store/
+
+# Builds
+dist/
+build/
+.next/
+out/
+*.tsbuildinfo
+
+# Entorno — NUNCA se versiona un .env con valores reales.
+# Ver docs/SEGURIDAD.md §2. Solo se versiona .env.example.
+.env
+.env.*
+!.env.example
+
+# Claves y certificados
+*.pem
+*.key
+*.p12
+*.pfx
+*.jks
+
+# Prisma
+prisma/*.db
+prisma/*.db-journal
+
+# Herramientas
+.turbo/
+coverage/
+.nyc_output/
+.eslintcache
+playwright-report/
+test-results/
+
+# Archivos generados en desarrollo (PDFs de prueba, exportaciones)
+tmp/
+uploads/
+
+# Sistema operativo y editores
+.DS_Store
+Thumbs.db
+desktop.ini
+.idea/
+.vscode/*
+!.vscode/extensions.json
+!.vscode/settings.json
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*

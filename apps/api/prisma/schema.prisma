@@ -1,0 +1,265 @@
+// Esquema núcleo — Etapa 1.
+// Diseño aprobado en docs/ETAPA-01.md §1. Los cambios de esquema a mitad de camino
+// son el mayor costo de este proyecto: cualquier modificación se propone primero.
+//
+// Toda tabla que se agregue con `empresaId` debe traer su política de Row Level
+// Security en la misma migración (docs/SEGURIDAD.md §1).
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+// Desde Prisma 7 las URLs de conexión no van en el esquema:
+//   - las migraciones toman DIRECT_URL (rol nexo_owner) desde prisma.config.ts
+//   - el runtime toma DATABASE_URL (rol nexo_app) desde el driver adapter en
+//     PrismaService, que es lo que hace que la RLS aplique de verdad
+datasource db {
+  provider = "postgresql"
+}
+
+// ─────────────────────────────────────────────────────────────
+// Enums
+// ─────────────────────────────────────────────────────────────
+
+enum ModuloSistema {
+  OPERACIONES
+  EGRESOS
+  EMPLEADOS
+  CONTABILIDAD
+  CUMPLIMIENTO
+  CLIENTES
+  ADMINISTRACION
+}
+
+enum NombreRol {
+  ADMINISTRADOR
+  EQUIPO_INTERNO
+}
+
+enum TipoContribuyente {
+  GRAN_CONTRIBUYENTE
+  PERSONA_JURIDICA
+  PERSONA_NATURAL
+  REGIMEN_SIMPLE
+  NO_RESPONSABLE_IVA
+}
+
+enum TipoDocumento {
+  CC
+  CE
+  NIT
+  PASAPORTE
+  PPT
+}
+
+enum Moneda {
+  COP
+  USD
+  USDT
+}
+
+enum TipoConsecutivo {
+  ORDEN_PAGO
+  FACTURA
+  RECIBO_NOMINA
+}
+
+enum AccionAudit {
+  CREAR
+  ACTUALIZAR
+  ANULAR
+  ELIMINAR // soft delete: nada se borra físicamente
+  INGRESAR
+  SALIR
+  INGRESO_FALLIDO
+  EXPORTAR // exportación masiva de datos personales — Ley 1581
+  CAMBIAR_EMPRESA
+  LLAMADA_EXTERNA
+}
+
+// ─────────────────────────────────────────────────────────────
+// Empresa administrada — raíz de todo el aislamiento
+// ─────────────────────────────────────────────────────────────
+
+model EmpresaAdministrada {
+  id                  String            @id @default(cuid())
+  nombre              String
+  nombreComercial     String?
+  nit                 String            @unique
+  digitoVerificacion  Int
+  tipoContribuyente   TipoContribuyente
+  municipio           String // sede principal — define el ICA
+  codigoDaneMunicipio String?
+  direccion           String?
+  telefono            String?
+  email               String?
+  logoUrl             String? // identidad de la empresa en los PDF generados
+  esNexo              Boolean           @default(false) // índice único parcial: solo una
+  activa              Boolean           @default(true)
+
+  usuarios     UsuarioEmpresa[]
+  consecutivos Consecutivo[]
+  auditLogs    AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([activa, deletedAt])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Identidad y acceso
+// ─────────────────────────────────────────────────────────────
+
+model Rol {
+  id          String    @id @default(cuid())
+  nombre      NombreRol @unique
+  descripcion String?
+  usuarios    Usuario[]
+}
+
+model Usuario {
+  id           String @id @default(cuid())
+  nombre       String
+  email        String @unique
+  passwordHash String // argon2id
+
+  totpSecretCifrado String? // AES-256-GCM; null hasta que registre el 2FA
+  totpActivado      Boolean @default(false)
+
+  rolId  String
+  rol    Rol     @relation(fields: [rolId], references: [id])
+  activo Boolean @default(true)
+
+  debeCambiarPassword Boolean   @default(true)
+  ultimoAcceso        DateTime?
+  intentosFallidos    Int       @default(0)
+  bloqueadoHasta      DateTime?
+
+  empresas        UsuarioEmpresa[]
+  permisos        PermisoModulo[]
+  sesiones        SesionRefresh[]
+  codigosRespaldo CodigoRespaldo[]
+  auditLogs       AuditLog[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([email, deletedAt])
+}
+
+/// Qué empresas puede ver un usuario. El rol ADMINISTRADOR accede a todas sin
+/// necesidad de filas aquí; se resuelve en EmpresaGuard.
+model UsuarioEmpresa {
+  id        String @id @default(cuid())
+  usuarioId String
+  empresaId String
+
+  usuario Usuario             @relation(fields: [usuarioId], references: [id])
+  empresa EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([usuarioId, empresaId])
+  @@index([empresaId])
+}
+
+/// Permiso por módulo, global al usuario y no por empresa (decisión confirmada,
+/// docs/ARQUITECTURA.md §5.2). Se verifica SIEMPRE en el backend.
+model PermisoModulo {
+  id          String        @id @default(cuid())
+  usuarioId   String
+  modulo      ModuloSistema
+  puedeVer    Boolean       @default(false)
+  puedeEditar Boolean       @default(false)
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  @@unique([usuarioId, modulo])
+}
+
+/// Refresh tokens con rotación. Reusar un token ya consumido revoca toda la familia.
+model SesionRefresh {
+  id        String @id @default(cuid())
+  usuarioId String
+  tokenHash String @unique // SHA-256 del token; el token en claro no se guarda
+  familiaId String
+
+  expiraEn   DateTime
+  revocadaEn DateTime?
+  ip         String?
+  userAgent  String?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([usuarioId, revocadaEn])
+  @@index([familiaId])
+}
+
+/// Códigos de un solo uso para recuperar el acceso si se pierde el TOTP.
+model CodigoRespaldo {
+  id         String    @id @default(cuid())
+  usuarioId  String
+  codigoHash String
+  usadoEn    DateTime?
+
+  usuario Usuario @relation(fields: [usuarioId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([usuarioId, usadoEn])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Consecutivos de documentos legales
+// ─────────────────────────────────────────────────────────────
+
+/// Se incrementa con bloqueo de fila dentro de la misma transacción que crea el
+/// documento. Nunca se calcula con count(). Un consecutivo emitido no se reutiliza
+/// aunque el documento se anule.
+model Consecutivo {
+  id          String          @id @default(cuid())
+  empresaId   String
+  tipo        TipoConsecutivo
+  prefijo     String          @default("")
+  ultimoValor Int             @default(0)
+
+  empresa EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, tipo])
+}
+
+// ─────────────────────────────────────────────────────────────
+// Audit log — append-only, garantizado por trigger y permisos
+// ─────────────────────────────────────────────────────────────
+
+model AuditLog {
+  id        BigInt      @id @default(autoincrement())
+  usuarioId String?
+  empresaId String? // null en eventos previos a elegir empresa (ingreso, fallo)
+  accion    AccionAudit
+  entidad   String
+  entidadId String?
+
+  valorAnterior Json?
+  valorNuevo    Json?
+
+  ip        String?
+  userAgent String?
+  ruta      String?
+  createdAt DateTime @default(now())
+
+  usuario Usuario?             @relation(fields: [usuarioId], references: [id])
+  empresa EmpresaAdministrada? @relation(fields: [empresaId], references: [id])
+
+  @@index([empresaId, createdAt])
+  @@index([usuarioId, createdAt])
+  @@index([entidad, entidadId])
+  @@index([createdAt])
+}

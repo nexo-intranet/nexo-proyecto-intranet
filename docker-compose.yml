@@ -1,0 +1,25 @@
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: nexo-postgres
+    restart: unless-stopped
+    environment:
+      # En local el dueño del esquema es nexo_owner. La aplicación NO usa este rol:
+      # se conecta como nexo_app, que se crea en infra/postgres/init.
+      POSTGRES_USER: nexo_owner
+      POSTGRES_PASSWORD: nexo_local
+      POSTGRES_DB: nexo
+      TZ: America/Bogota
+    ports:
+      - '5432:5432'
+    volumes:
+      - nexo-pgdata:/var/lib/postgresql/data
+      - ./infra/postgres/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U nexo_owner -d nexo']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+volumes:
+  nexo-pgdata:
