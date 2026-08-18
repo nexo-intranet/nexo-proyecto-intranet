@@ -44,9 +44,21 @@ export const verificarSegundoFactorEsquema = z
   });
 export type DatosVerificarSegundoFactor = z.infer<typeof verificarSegundoFactorEsquema>;
 
+/**
+ * Registro del segundo factor. Ocurre antes de que exista sesión —un usuario nuevo
+ * debe activar el 2FA en su primer ingreso—, así que se acredita con el token de
+ * reto que devuelve `/auth/ingresar`.
+ */
+export const iniciar2faEsquema = z.object({
+  tokenReto: textoRequerido('El token de verificación', 500),
+});
+export type DatosIniciar2fa = z.infer<typeof iniciar2faEsquema>;
+
 export const confirmar2faEsquema = z.object({
+  tokenReto: textoRequerido('El token de verificación', 500),
   codigo: codigoTotpEsquema,
 });
+export type DatosConfirmar2fa = z.infer<typeof confirmar2faEsquema>;
 
 export const cambiarPasswordEsquema = z
   .object({

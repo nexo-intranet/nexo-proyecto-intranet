@@ -128,6 +128,12 @@ model Usuario {
   totpSecretCifrado String? // AES-256-GCM; null hasta que registre el 2FA
   totpActivado      Boolean @default(false)
 
+  // Un código TOTP sirve una sola vez: dentro de su ventana de validez no se
+  // vuelve a aceptar. Sin esto, un código interceptado se puede reusar durante
+  // los segundos que le queden de vida (docs/SEGURIDAD.md §4).
+  ultimoTotpUsado String?
+  ultimoTotpEn    DateTime?
+
   rolId  String
   rol    Rol     @relation(fields: [rolId], references: [id])
   activo Boolean @default(true)

@@ -11,6 +11,8 @@ import { PrismaService } from '../../core/prisma/prisma.service';
 export interface PayloadAcceso {
   /** Id del usuario. */
   sub: string;
+  /** Debe ser 'acceso'. El token de reto del 2FA no sirve para autenticarse. */
+  tipo: string;
 }
 
 /**
@@ -43,6 +45,10 @@ export class JwtAuthGuard implements CanActivate {
     let payload: PayloadAcceso;
     try {
       payload = await this.jwt.verifyAsync<PayloadAcceso>(token);
+      // Ambos tokens se firman con la misma clave, así que la firma no alcanza
+      // para distinguirlos: sin esta comprobación, el token de reto que se emite
+      // tras la contraseña —y antes del segundo factor— serviría como sesión.
+      if (payload.tipo !== 'acceso') throw new Error('tipo de token incorrecto');
     } catch {
       throw new ErrorNegocio(
         'TOKEN_EXPIRADO',

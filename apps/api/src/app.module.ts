@@ -12,6 +12,7 @@ import type { Entorno } from './core/config/configuracion';
 import { validarEntorno } from './core/config/configuracion';
 import { ContextoMiddleware } from './core/context/contexto.middleware';
 import { CoreModule } from './core/core.module';
+import { AuthModule } from './modules/auth/auth.module';
 
 /**
  * Los guards globales corren en el orden en que se declaran aquí:
@@ -35,6 +36,7 @@ import { CoreModule } from './core/core.module';
     // Límite de tasa general. Las rutas de autenticación llevan uno más estricto.
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     CoreModule,
+    AuthModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
