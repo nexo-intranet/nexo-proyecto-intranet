@@ -22,6 +22,11 @@ export interface ContextoPeticion {
    * que la extensión de Prisma abra una transacción anidada por cada consulta.
    */
   dentroDeTransaccion?: boolean;
+  /**
+   * Un servicio ya registró esta mutación en el audit log con su valor anterior.
+   * El interceptor no vuelve a registrarla de forma genérica.
+   */
+  auditado?: boolean;
 }
 
 /** Error de programación: se intentó tocar datos de negocio sin empresa activa. */
@@ -84,6 +89,16 @@ export class ContextoService {
     const contexto = this.almacen.getStore();
     if (!contexto) return;
     contexto.empresaId = empresaId;
+  }
+
+  /** Marca que la mutación ya quedó registrada con detalle. Lo llama AuditService. */
+  marcarAuditado(): void {
+    const contexto = this.almacen.getStore();
+    if (contexto) contexto.auditado = true;
+  }
+
+  fueAuditado(): boolean {
+    return this.almacen.getStore()?.auditado ?? false;
   }
 
   dentroDeTransaccion(): boolean {
