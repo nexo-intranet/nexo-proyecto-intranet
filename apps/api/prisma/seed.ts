@@ -1,4 +1,5 @@
-import 'dotenv/config';
+import { config as cargarEnv } from 'dotenv';
+cargarEnv({ path: ['../../.env', '.env'], quiet: true });
 import { randomBytes } from 'node:crypto';
 import { PrismaPg } from '@prisma/adapter-pg';
 import { PrismaClient } from '@prisma/client';

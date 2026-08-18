@@ -13,6 +13,7 @@ import { validarEntorno } from './core/config/configuracion';
 import { ContextoMiddleware } from './core/context/contexto.middleware';
 import { CoreModule } from './core/core.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { SaludModule } from './modules/salud/salud.module';
 
 /**
  * Los guards globales corren en el orden en que se declaran aquí:
@@ -30,6 +31,8 @@ import { AuthModule } from './modules/auth/auth.module';
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
+      // El .env vive en la raíz del monorepo y lo comparten API y web.
+      envFilePath: ['../../.env', '.env'],
       // Si falta un secreto o está mal formado, el proceso no arranca.
       validate: validarEntorno,
     }),
@@ -37,6 +40,7 @@ import { AuthModule } from './modules/auth/auth.module';
     ThrottlerModule.forRoot([{ ttl: 60_000, limit: 120 }]),
     CoreModule,
     AuthModule,
+    SaludModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
@@ -55,6 +59,6 @@ import { AuthModule } from './modules/auth/auth.module';
 })
 export class AppModule implements NestModule {
   configure(consumer: MiddlewareConsumer): void {
-    consumer.apply(ContextoMiddleware).forRoutes('*');
+    consumer.apply(ContextoMiddleware).forRoutes('{*ruta}');
   }
 }

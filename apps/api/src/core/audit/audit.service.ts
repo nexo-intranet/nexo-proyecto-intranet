@@ -82,13 +82,23 @@ export class AuditService {
   /**
    * Escribe una entrada. Marca la petición como auditada para que el interceptor
    * no vuelva a registrar la misma mutación de forma genérica.
+   *
+   * **Propaga el error a propósito.** Lo normal es que esto se llame dentro de la
+   * misma transacción que hace el cambio, así que si la auditoría falla, el cambio
+   * se deshace con ella. El brief no admite mutaciones sin registro, y una
+   * excepción tragada aquí sería justo eso, sin que nadie se entere.
    */
   async registrar(entrada: RegistroAudit): Promise<void> {
     const peticion = this.contexto.obtener();
 
-    try {
-      await this.prisma.db.auditLog.create({
-        data: {
+    // Se usa createMany y no create porque `create` genera INSERT ... RETURNING, y
+    // con RLS activa el RETURNING pasa por la política de SELECT. Los eventos
+    // previos a elegir empresa —ingreso, ingreso fallido, salida— no tienen
+    // empresaId, así que esa política los filtraría y el INSERT fallaría entero.
+    // createMany no devuelve la fila, que además nunca necesitamos.
+    await this.prisma.db.auditLog.createMany({
+      data: [
+        {
           usuarioId: entrada.usuarioId ?? peticion?.usuarioId ?? null,
           accion: entrada.accion,
           entidad: entrada.entidad,
@@ -99,12 +109,24 @@ export class AuditService {
           userAgent: peticion?.userAgent ?? null,
           ruta: peticion?.ruta ?? null,
         },
-      });
+      ],
+    });
 
-      this.contexto.marcarAuditado();
+    this.contexto.marcarAuditado();
+  }
+
+  /**
+   * Igual que `registrar`, pero sin propagar el error.
+   *
+   * Solo lo usa el interceptor, que corre **después** de que la mutación ya se
+   * confirmó: fallar ahí devolvería un error al usuario por un cambio que sí
+   * ocurrió, y eso es peor que un registro perdido. El fallo queda en el log del
+   * servidor, bien visible.
+   */
+  async registrarSinFallar(entrada: RegistroAudit): Promise<void> {
+    try {
+      await this.registrar(entrada);
     } catch (error) {
-      // Un fallo al auditar no puede tumbar la operación del usuario, pero sí tiene
-      // que quedar visible: un audit log con huecos silenciosos no sirve de nada.
       this.registro.error(
         `No se pudo registrar en el audit log: ${entrada.accion} ${entrada.entidad}`,
         error instanceof Error ? error.stack : undefined,

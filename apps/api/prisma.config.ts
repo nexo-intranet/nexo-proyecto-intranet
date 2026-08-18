@@ -1,5 +1,9 @@
-import 'dotenv/config';
+import { config as cargarEnv } from 'dotenv';
 import { defineConfig } from '@prisma/config';
+
+// El .env vive en la raíz del monorepo y lo comparten API y web. Prisma corre con
+// el directorio de trabajo en apps/api, así que hay que apuntarle explícitamente.
+cargarEnv({ path: ['../../.env', '.env'], quiet: true });
 
 /**
  * Configuración de las herramientas de Prisma (migrate, studio, seed).

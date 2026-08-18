@@ -53,7 +53,7 @@ export class AuditInterceptor implements NestInterceptor {
             ? String((resultado as { id: unknown }).id)
             : undefined;
 
-        void this.audit.registrar({
+        void this.audit.registrarSinFallar({
           accion,
           entidad,
           entidadId,
