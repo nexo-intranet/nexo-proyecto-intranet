@@ -37,8 +37,14 @@ async function arrancar(): Promise<void> {
     maxAge: 86_400,
   });
 
-  const puerto = config.get('API_PORT', { infer: true });
-  await app.listen(puerto);
+  // Railway y la mayoría de plataformas asignan el puerto por `PORT` y comprueban
+  // ahí que el servicio esté vivo. Si el proceso escuchara en otro, el despliegue
+  // quedaría reiniciándose sin que el log dijera nada raro.
+  const puerto = Number(process.env.PORT) || config.get('API_PORT', { infer: true });
+
+  // Explícito en 0.0.0.0: dentro de un contenedor, escuchar solo en localhost
+  // deja el servicio inalcanzable desde fuera.
+  await app.listen(puerto, '0.0.0.0');
 
   new Logger('Arranque').log(`API escuchando en el puerto ${puerto} (${entorno})`);
 }
