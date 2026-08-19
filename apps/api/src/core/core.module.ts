@@ -5,6 +5,7 @@ import { AuditService } from './audit/audit.service';
 import { ConsecutivoService } from './consecutivos/consecutivo.service';
 import { ContextoService } from './context/contexto.service';
 import { CifradoService } from './crypto/cifrado.service';
+import { PdfService } from './pdf/pdf.service';
 import { PrismaService } from './prisma/prisma.service';
 import type { Entorno } from './config/configuracion';
 
@@ -34,6 +35,7 @@ import type { Entorno } from './config/configuracion';
     ContextoService,
     AuditService,
     ConsecutivoService,
+    PdfService,
     {
       provide: PrismaService,
       inject: [ConfigService, ContextoService],

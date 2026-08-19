@@ -431,6 +431,11 @@ Solo lectura. Sin rutas de escritura ni de borrado — por diseño.
 
 ## 4. Criterio de terminado (tomado del brief, verificable)
 
+> Estado al 2026-08-19: backend, frontend y generador de PDF construidos.
+> 29 pruebas en `apps/api` y 19 en `packages/shared`, todas en verde, con el CI
+> corriendo tipos, lint, pruebas, búsqueda de secretos y auditoría de dependencias.
+> Falta la revisión manual de la interfaz con un usuario real.
+
 - [ ] Un administrador crea dos empresas y un usuario de equipo interno.
 - [ ] Ese usuario ingresa con contraseña + TOTP y es forzado a cambiar la contraseña.
 - [ ] Cambia entre empresas desde la barra superior y los datos cambian con ella.
