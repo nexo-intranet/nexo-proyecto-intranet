@@ -2,6 +2,7 @@ import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
 import { AuditService } from './audit/audit.service';
+import { ConsecutivoService } from './consecutivos/consecutivo.service';
 import { ContextoService } from './context/contexto.service';
 import { CifradoService } from './crypto/cifrado.service';
 import { PrismaService } from './prisma/prisma.service';
@@ -32,6 +33,7 @@ import type { Entorno } from './config/configuracion';
   providers: [
     ContextoService,
     AuditService,
+    ConsecutivoService,
     {
       provide: PrismaService,
       inject: [ConfigService, ContextoService],
@@ -49,6 +51,13 @@ import type { Entorno } from './config/configuracion';
         ),
     },
   ],
-  exports: [ContextoService, PrismaService, CifradoService, AuditService, JwtModule],
+  exports: [
+    ContextoService,
+    PrismaService,
+    CifradoService,
+    AuditService,
+    ConsecutivoService,
+    JwtModule,
+  ],
 })
 export class CoreModule {}

@@ -12,8 +12,11 @@ import type { Entorno } from './core/config/configuracion';
 import { validarEntorno } from './core/config/configuracion';
 import { ContextoMiddleware } from './core/context/contexto.middleware';
 import { CoreModule } from './core/core.module';
+import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { EmpresasModule } from './modules/empresas/empresas.module';
 import { SaludModule } from './modules/salud/salud.module';
+import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
 /**
  * Los guards globales corren en el orden en que se declaran aquí:
@@ -41,6 +44,9 @@ import { SaludModule } from './modules/salud/salud.module';
     CoreModule,
     AuthModule,
     SaludModule,
+    EmpresasModule,
+    UsuariosModule,
+    AuditoriaModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },
