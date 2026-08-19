@@ -1,0 +1,9 @@
+# Hallazgos revisados uno por uno. Cada línea necesita su explicación: esta lista
+# es la que decide qué NO se revisa, así que agregar algo aquí sin justificarlo
+# es desactivar el control en silencio.
+
+# Falso positivo, ya remediado. Era la contraseña de un usuario de prueba escrita
+# en el código del test de aislamiento. gitleaks tenía razón en marcarla, y se
+# reemplazó por una generada en cada corrida. El hallazgo sigue apareciendo porque
+# el commit permanece en el historial, que es justamente lo que se quiere escanear.
+3cb8e2e6d637274baf9440b1cb031b4555aebbea:apps/api/src/aislamiento.e2e.spec.ts:generic-api-key:26

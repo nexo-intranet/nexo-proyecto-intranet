@@ -94,6 +94,13 @@ describe('Aislamiento entre empresas, de punta a punta', () => {
         );
       }
 
+      // La prueba no asume que la base esté sembrada: crea el rol si falta. En un
+      // entorno limpio —como el de CI— no hay nada cargado todavía.
+      await cliente.query(
+        `INSERT INTO "Rol" ("id","nombre","descripcion")
+         VALUES ('e2e_rol_equipo','EQUIPO_INTERNO','Acceso según los permisos asignados')
+         ON CONFLICT ("nombre") DO NOTHING`,
+      );
       const rol = await cliente.query<{ id: string }>(
         `SELECT id FROM "Rol" WHERE nombre = 'EQUIPO_INTERNO'`,
       );
