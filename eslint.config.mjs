@@ -1,6 +1,7 @@
 import js from '@eslint/js';
 import tseslint from 'typescript-eslint';
 import prettier from 'eslint-config-prettier';
+import next from '@next/eslint-plugin-next';
 
 /**
  * Reglas de lint del monorepo.
@@ -27,6 +28,15 @@ export default tseslint.config(
       ],
       'no-console': ['warn', { allow: ['warn', 'error'] }],
       eqeqeq: ['error', 'always', { null: 'ignore' }],
+    },
+  },
+  {
+    // Reglas propias de Next.js, solo para la aplicación web.
+    files: ['apps/web/**/*.{ts,tsx}'],
+    plugins: { '@next/next': next },
+    rules: {
+      ...next.configs.recommended.rules,
+      ...next.configs['core-web-vitals'].rules,
     },
   },
   {

@@ -1,0 +1,97 @@
+@import 'tailwindcss';
+
+/**
+ * Sistema de diseño — interfaz blanca estilo fintech (brief §7).
+ *
+ * Los valores salen del brief y no se improvisan. Tres reglas que gobiernan todo
+ * lo demás:
+ *   · el dorado es acento, nunca relleno de secciones grandes
+ *   · la jerarquía se construye con espaciado y peso tipográfico, no con cajas de color
+ *   · bordes de un pixel en vez de sombras, salvo en elementos realmente flotantes
+ *
+ * No hay modo oscuro. Es una decisión del cliente, no un pendiente.
+ */
+
+@theme {
+  --color-fondo: #ffffff;
+  --color-superficie: #ffffff;
+  --color-superficie-alt: #fafaf9;
+  --color-borde: #e7e5e4;
+  --color-texto: #1c1917;
+  --color-texto-suave: #78716c;
+
+  --color-dorado: #c4922a;
+  --color-dorado-suave: #fdf6e7;
+
+  --color-exito: #15803d;
+  --color-alerta: #b45309;
+  --color-peligro: #b91c1c;
+
+  --radius-sm: 4px;
+  --radius-md: 6px;
+
+  --font-sans:
+    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+}
+
+@layer base {
+  * {
+    border-color: var(--color-borde);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+  }
+
+  body {
+    background-color: var(--color-fondo);
+    color: var(--color-texto);
+    font-family: var(--font-sans);
+    font-size: 14px;
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  /* El foco tiene que verse siempre: la interfaz se opera con teclado (brief §9). */
+  :focus-visible {
+    outline: 2px solid var(--color-dorado);
+    outline-offset: 2px;
+    border-radius: var(--radius-sm);
+  }
+
+  /* Cifras, hashes y montos: monoespaciada y con dígitos de ancho fijo, para que
+     las columnas de dinero queden alineadas. */
+  .cifra {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-size: 13px;
+  }
+
+  h1 {
+    font-size: 20px;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+  }
+
+  h2 {
+    font-size: 16px;
+    font-weight: 600;
+  }
+
+  ::selection {
+    background-color: var(--color-dorado-suave);
+  }
+}
+
+@layer components {
+  /* Encabezado de columna de tabla: mayúsculas pequeñas y color suave, para que
+     los datos pesen más que sus etiquetas. */
+  .encabezado-columna {
+    font-size: 11px;
+    font-weight: 500;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+    color: var(--color-texto-suave);
+  }
+}
