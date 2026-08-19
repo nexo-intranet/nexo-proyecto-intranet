@@ -18,6 +18,7 @@ import {
 import type { Request, Response } from 'express';
 import {
   Publico,
+  SinAuditoriaGenerica,
   SinEmpresa,
   UsuarioActual,
   type UsuarioAutenticado,
@@ -42,6 +43,7 @@ const LIMITE_CREDENCIALES = { default: { limit: 5, ttl: 60_000 } };
 
 @Controller('auth')
 @SinEmpresa()
+@SinAuditoriaGenerica()
 export class AuthController {
   constructor(
     private readonly auth: AuthService,

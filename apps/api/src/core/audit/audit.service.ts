@@ -74,10 +74,40 @@ export function redactar(valor: unknown, profundidad = 0): unknown {
 export class AuditService {
   private readonly registro = new Logger(AuditService.name);
 
+  /** Id de Nexo. Es una sola fila y no cambia; se resuelve una vez por proceso. */
+  private empresaNexo: string | null = null;
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly contexto: ContextoService,
   ) {}
+
+  /**
+   * A qué empresa pertenece el registro.
+   *
+   * Las acciones administrativas —crear una empresa, crear un usuario, ingresar—
+   * ocurren sin empresa activa. Si se guardaran con `empresaId` nulo, la política
+   * de lectura del audit log las filtraría y quedarían escritas pero invisibles:
+   * un historial con huecos que nadie puede consultar.
+   *
+   * Se atribuyen a Nexo, que es quien administra el sistema y la primera fila de
+   * EmpresaAdministrada (decisión #1 del brief). Así aparecen en su historial y no
+   * en el de las empresas administradas, que es donde corresponden.
+   */
+  private async empresaDelRegistro(): Promise<string | null> {
+    const activa = this.contexto.empresaId();
+    if (activa) return activa;
+
+    if (!this.empresaNexo) {
+      const nexo = await this.prisma.db.empresaAdministrada.findFirst({
+        where: { esNexo: true },
+        select: { id: true },
+      });
+      this.empresaNexo = nexo?.id ?? null;
+    }
+
+    return this.empresaNexo;
+  }
 
   /**
    * Escribe una entrada. Marca la petición como auditada para que el interceptor
@@ -99,6 +129,7 @@ export class AuditService {
     await this.prisma.db.auditLog.createMany({
       data: [
         {
+          empresaId: await this.empresaDelRegistro(),
           usuarioId: entrada.usuarioId ?? peticion?.usuarioId ?? null,
           accion: entrada.accion,
           entidad: entrada.entidad,

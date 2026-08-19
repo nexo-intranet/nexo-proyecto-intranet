@@ -3,7 +3,7 @@ import { Reflector } from '@nestjs/core';
 import type { AccionAudit } from '@nexo/shared';
 import type { Request } from 'express';
 import { Observable, tap } from 'rxjs';
-import { CLAVE_ENTIDAD_AUDITADA } from '../decoradores';
+import { CLAVE_ENTIDAD_AUDITADA, CLAVE_SIN_AUDITORIA_GENERICA } from '../decoradores';
 import { AuditService } from '../../core/audit/audit.service';
 import { ContextoService } from '../../core/context/contexto.service';
 
@@ -36,6 +36,12 @@ export class AuditInterceptor implements NestInterceptor {
     const accion = ACCION_POR_METODO[peticion.method];
 
     if (!accion) return siguiente.handle();
+
+    const excluido = this.reflector.getAllAndOverride<boolean>(CLAVE_SIN_AUDITORIA_GENERICA, [
+      contextoEjecucion.getHandler(),
+      contextoEjecucion.getClass(),
+    ]);
+    if (excluido) return siguiente.handle();
 
     const entidad =
       this.reflector.getAllAndOverride<string>(CLAVE_ENTIDAD_AUDITADA, [

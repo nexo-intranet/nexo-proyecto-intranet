@@ -32,6 +32,16 @@ export const Permiso = (modulo: ModuloSistema, nivel: NivelPermiso = 'ver') =>
 export const CLAVE_ENTIDAD_AUDITADA = 'entidad_auditada';
 export const Auditar = (entidad: string) => SetMetadata(CLAVE_ENTIDAD_AUDITADA, entidad);
 
+/**
+ * Desactiva el registro genérico del interceptor para este controlador.
+ *
+ * Solo se usa donde el servicio ya audita cada evento con su acción propia, como
+ * autenticación: ahí la red de seguridad no agrega información y sí agrega ruido
+ * en un historial que alguien tiene que poder leer.
+ */
+export const CLAVE_SIN_AUDITORIA_GENERICA = 'sin_auditoria_generica';
+export const SinAuditoriaGenerica = () => SetMetadata(CLAVE_SIN_AUDITORIA_GENERICA, true);
+
 export interface UsuarioAutenticado {
   id: string;
   nombre: string;

@@ -145,6 +145,16 @@ export class AuthService {
       data: { totpSecretCifrado: this.cifrado.cifrar(secreto), totpActivado: false },
     });
 
+    // Generar un secreto nuevo invalida el anterior, así que es un evento de
+    // seguridad por derecho propio: queda registrado con su nombre.
+    await this.audit.registrar({
+      accion: 'ACTUALIZAR',
+      entidad: 'Usuario',
+      entidadId: usuario.id,
+      usuarioId: usuario.id,
+      valorNuevo: { totpSecretoGenerado: true },
+    });
+
     return { secreto, qr: await this.totp.generarQr(usuario.email, secreto) };
   }
 
