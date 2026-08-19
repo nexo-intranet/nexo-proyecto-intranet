@@ -14,7 +14,18 @@ import { NextResponse, type NextRequest } from 'next/server';
  * este proxy se puede quitar y el navegador hablar directo con el API.
  */
 
-const API_INTERNO = process.env.API_INTERNAL_URL ?? 'http://localhost:3001';
+function urlDelApi(): string {
+  const configurada = process.env.API_INTERNAL_URL;
+  if (configurada) return configurada;
+
+  // En producción, caer al localhost por defecto haría que cada petición fallara
+  // con un error de red y nadie sabría por qué. Mejor que el despliegue avise.
+  if (process.env.NODE_ENV === 'production') {
+    throw new Error('Falta API_INTERNAL_URL: el proxy no sabe a dónde reenviar.');
+  }
+
+  return 'http://localhost:3001';
+}
 
 /** Encabezados que se dejan pasar hacia el API. Lista cerrada, no lo que llegue. */
 const HEADERS_PERMITIDOS = [
@@ -28,7 +39,7 @@ const HEADERS_PERMITIDOS = [
 
 async function reenviar(peticion: NextRequest, segmentos: string[]): Promise<NextResponse> {
   const consulta = peticion.nextUrl.search;
-  const destino = `${API_INTERNO}/api/v1/${segmentos.join('/')}${consulta}`;
+  const destino = `${urlDelApi()}/api/v1/${segmentos.join('/')}${consulta}`;
 
   const encabezados = new Headers();
   for (const nombre of HEADERS_PERMITIDOS) {

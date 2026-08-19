@@ -27,7 +27,9 @@ const entornoEsquema = z.object({
   JWT_REFRESH_SECRET: z.string().min(32, 'JWT_REFRESH_SECRET debe tener al menos 32 caracteres'),
   JWT_ACCESS_TTL: z.string().default('15m'),
   JWT_REFRESH_TTL: z.string().default('7d'),
-  COOKIE_DOMAIN: z.string().default('localhost'),
+  /// Vacío cuando la web habla con el API a través del proxy de Next: la cookie
+  /// queda ligada al host que responde. Solo se llena si comparten dominio propio.
+  COOKIE_DOMAIN: z.string().default(''),
 
   ENCRYPTION_KEY: claveBase64De32Bytes('ENCRYPTION_KEY'),
   ENCRYPTION_KEY_VERSION: z.coerce.number().int().min(1).default(1),
