@@ -6,7 +6,8 @@ Léelo por completo antes de trabajar en cualquier módulo o tarea.
 Documentos derivados, ya aprobados por el cliente:
 
 - `docs/ARQUITECTURA.md` — estructura del monorepo, convenciones y las 8 etapas
-- `docs/ETAPA-01.md` — esquema Prisma y rutas de la etapa en curso
+- `docs/ETAPA-01.md` — cimientos: esquema núcleo, auth, RBAC, audit log (terminada)
+- `docs/ETAPA-02.md` — operaciones: propuesta de esquema y rutas, pendiente de confirmar
 - `docs/SEGURIDAD.md` — **vinculante en todas las etapas**: RLS, manejo de secretos,
   superficie pública de la API, sesión y datos personales. Su §7 tiene el checklist
   obligatorio de cada PR.
