@@ -1,6 +1,6 @@
 # Etapa 2 — Operaciones · Esquema y API
 
-> **Propuesta para revisión. No se ha escrito código.**
+> **Esquema aprobado (2026-08-19). En construcción.**
 > Contexto: `docs/ARQUITECTURA.md` §4 · Seguridad vinculante: `docs/SEGURIDAD.md`
 
 Es el módulo que resuelve el dolor principal del brief: hoy buscan una transacción
@@ -12,9 +12,10 @@ hash conectado a ⌘K, dispersión con reglas configurables y conciliación de d
 
 ---
 
-## 1. Las tres decisiones que hay que tomar antes
+## 1. Las tres decisiones — resueltas
 
-Estas cambian el esquema, así que conviene resolverlas ahora y no a mitad de camino.
+Se construye con las tres propuestas. Las resoluciones quedan abajo, junto al
+razonamiento original, porque de las tres solo una es difícil de revertir.
 
 ### 1.1 Qué es económicamente una operación
 
@@ -43,9 +44,11 @@ ganancia cuando compra y venta están en monedas diferentes.
 Si compra y venta son ambas en COP, las tasas quedan en null y la ganancia es la
 resta directa. El esquema soporta los dos casos.
 
-> **Pregunta 1.** ¿Es así como lo piensan? Si en la práctica siempre compran y
-> venden en pesos y la cantidad de cripto no la registran, el modelo se simplifica
-> bastante y prefiero saberlo ahora.
+> **Resuelto.** Se construye este modelo, pero con `cantidad` y `monedaActivo`
+> **opcionales**. Así soporta los dos mundos sin migración: si el cliente registra la
+> cantidad de cripto, va; si solo maneja valores en pesos, quedan nulos y la ganancia
+> es la resta directa. Es la opción conservadora que pide el brief §10: elegir lo que
+> no cierra puertas. Queda `TODO [CONFIRMAR]` en el esquema.
 
 ### 1.2 El hash, ¿es único?
 
@@ -56,9 +59,9 @@ resultado es ambiguo justo en la función más usada del sistema.
 puede registrar antes de tener el hash confirmado— y validado contra el formato de
 la red correspondiente.
 
-> **Pregunta 2.** ¿Puede una misma transacción de la cadena corresponder a varias
-> operaciones? Pasa cuando una transferencia agrupa varios clientes. Si es así, el
-> hash no puede ser único y el buscador devuelve una lista en vez de un registro.
+> **Resuelto.** Único por empresa. La asimetría manda: quitar una restricción de
+> unicidad después es una migración trivial, mientras que agregarla más adelante
+> obliga a limpiar a mano los duplicados que ya se colaron. Se empieza estricto.
 
 ### 1.3 ¿Una operación se puede editar?
 
@@ -68,8 +71,8 @@ nómina). Una operación no está en esa lista.
 **Propuesta:** editable mientras esté en `REGISTRADA`, con todo el historial en el
 audit log; una vez `CONCILIADA` solo se anula, con motivo. Anular nunca borra.
 
-> **Pregunta 3.** ¿Están de acuerdo, o prefieren que una operación sea inmutable
-> desde que se guarda?
+> **Resuelto.** Editable mientras esté `REGISTRADA`, inmutable una vez `CONCILIADA`,
+> siempre anulable con motivo. Todo cambio queda en el audit log con valor anterior.
 
 ---
 
@@ -149,8 +152,10 @@ model Operacion {
   red  RedBlockchain?
 
   // ── El activo que se movió ──────────────────────────────────────────────
-  cantidad     Decimal @db.Decimal(36, 18)
-  monedaActivo Moneda
+  // Opcionales a propósito: TODO [CONFIRMAR] si el cliente registra la cantidad de
+  // cripto o solo los valores en pesos. Nulos, la ganancia es la resta directa.
+  cantidad     Decimal? @db.Decimal(36, 18)
+  monedaActivo Moneda?
 
   // ── La plata que entró y salió ──────────────────────────────────────────
   valorCompra  Decimal  @db.Decimal(18, 2)

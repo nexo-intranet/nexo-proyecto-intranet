@@ -101,6 +101,14 @@ model EmpresaAdministrada {
   consecutivos Consecutivo[]
   auditLogs    AuditLog[]
 
+  clientes           Cliente[]
+  operaciones        Operacion[]
+  destinatarios      Destinatario[]
+  reglasDispersion   ReglaDispersion[]
+  reglasDestino      ReglaDispersionDestino[]
+  dispersiones       Dispersion[]
+  dispersionDestinos DispersionDestino[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -143,11 +151,12 @@ model Usuario {
   intentosFallidos    Int       @default(0)
   bloqueadoHasta      DateTime?
 
-  empresas        UsuarioEmpresa[]
-  permisos        PermisoModulo[]
-  sesiones        SesionRefresh[]
-  codigosRespaldo CodigoRespaldo[]
-  auditLogs       AuditLog[]
+  empresas            UsuarioEmpresa[]
+  permisos            PermisoModulo[]
+  operacionesAnuladas Operacion[]      @relation("operacionAnuladaPor")
+  sesiones            SesionRefresh[]
+  codigosRespaldo     CodigoRespaldo[]
+  auditLogs           AuditLog[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -268,4 +277,270 @@ model AuditLog {
   @@index([usuarioId, createdAt])
   @@index([entidad, entidadId])
   @@index([createdAt])
+}
+
+// ═════════════════════════════════════════════════════════════
+// Etapa 2 — Operaciones y dispersión
+// ═════════════════════════════════════════════════════════════
+
+enum TipoCliente {
+  PERSONA_NATURAL
+  PERSONA_JURIDICA
+}
+
+enum EstadoOperacion {
+  BORRADOR // se está capturando; no cuenta para reportes
+  REGISTRADA // completa y vigente; editable
+  CONCILIADA // su dispersión quedó ejecutada por completo; ya no se edita
+  ANULADA // sin efecto, se conserva con su motivo
+}
+
+enum RedBlockchain {
+  BITCOIN
+  ETHEREUM
+  TRON
+  BSC
+  POLYGON
+  SOLANA
+  OTRA
+}
+
+enum TipoReparto {
+  PORCENTAJE
+  MONTO_FIJO
+}
+
+enum EstadoDispersion {
+  PENDIENTE
+  PARCIAL
+  EJECUTADA
+}
+
+enum EstadoDestino {
+  PENDIENTE
+  EJECUTADO
+  DEVUELTO
+}
+
+/// Adelanto mínimo de la Etapa 4: `Operacion` cuelga de un cliente. La Etapa 4 le
+/// agrega portafolio, contacto y calendario tributario.
+model Cliente {
+  id        String @id @default(cuid())
+  empresaId String
+
+  nombre  String
+  tipo    TipoCliente
+  tipoDoc TipoDocumento
+
+  /// Cifrado con AES-256-GCM: es un dato personal (Ley 1581, docs/SEGURIDAD.md §5).
+  numeroDocCifrado String
+  /// HMAC determinista. Es lo único indexable: permite buscar por documento sin
+  /// descifrar y sin exponer el número en claro dentro de un índice.
+  numeroDocHash    String
+  /// Últimos cuatro dígitos, para mostrar «•••• 4821» sin descifrar en cada fila.
+  numeroDocFinal   String
+
+  /// Define las fechas del calendario tributario (Etapa 6).
+  ultimoDigitoNit Int?
+  municipio       String?
+  email           String?
+  telefono        String?
+
+  empresa     EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  operaciones Operacion[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([empresaId, numeroDocHash])
+  @@index([empresaId, nombre])
+}
+
+model Operacion {
+  id        String @id @default(cuid())
+  empresaId String
+  clienteId String
+
+  /// Hash de la transacción en la cadena. Es el buscador central del sistema.
+  hash String?
+  red  RedBlockchain?
+
+  // ── El activo que se movió ────────────────────────────────────────────────
+  // TODO [CONFIRMAR] Opcionales hasta que el cliente confirme si registra la
+  // cantidad de cripto o solo los valores en pesos. Nulos, la ganancia es la
+  // resta directa entre venta y compra.
+  cantidad     Decimal? @db.Decimal(36, 18)
+  monedaActivo Moneda?
+
+  // ── La plata que entró y salió ────────────────────────────────────────────
+  // Dos tasas y no una: la de compra y la de venta son distintas, y en esa
+  // diferencia está el negocio. Quedan congeladas al momento de la operación —
+  // recalcular con la tasa de hoy cambiaría el resultado de un cierre pasado.
+  valorCompra  Decimal  @db.Decimal(18, 2)
+  monedaCompra Moneda
+  tasaCompra   Decimal? @db.Decimal(18, 6)
+
+  valorVenta  Decimal  @db.Decimal(18, 2)
+  monedaVenta Moneda
+  tasaVenta   Decimal? @db.Decimal(18, 6)
+
+  /// Calculada y persistida al guardar, nunca derivada en cada lectura (brief §5).
+  gananciaCOP Decimal @db.Decimal(18, 2)
+
+  estado         EstadoOperacion @default(REGISTRADA)
+  fechaOperacion DateTime
+  observaciones  String?
+
+  motivoAnulacion String?
+  anuladaEn       DateTime?
+  anuladaPorId    String?
+
+  empresa    EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  cliente    Cliente             @relation(fields: [clienteId], references: [id])
+  anuladaPor Usuario?            @relation("operacionAnuladaPor", fields: [anuladaPorId], references: [id])
+  dispersion Dispersion?
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  /// El buscador por hash es la función más usada del sistema: este índice es lo
+  /// que hace que responda al instante en vez de recorrer la tabla.
+  @@unique([empresaId, hash])
+  @@index([empresaId, fechaOperacion(sort: Desc)])
+  @@index([empresaId, estado])
+  @@index([clienteId])
+}
+
+/// Catálogo de a quién se le dispersa. Existe para no volver a escribir la cuenta
+/// bancaria en cada operación, que es donde se cometen los errores caros.
+model Destinatario {
+  id        String @id @default(cuid())
+  empresaId String
+
+  nombre  String
+  tipoDoc TipoDocumento
+
+  numeroDocCifrado String
+  numeroDocHash    String
+  numeroDocFinal   String
+
+  banco         String?
+  tipoCuenta    String?
+  /// Cifrada: junto con el documento identifica a una persona (Ley 1581).
+  cuentaCifrada String?
+  cuentaFinal   String?
+
+  activo Boolean @default(true)
+
+  empresa  EmpresaAdministrada      @relation(fields: [empresaId], references: [id])
+  reglas   ReglaDispersionDestino[]
+  destinos DispersionDestino[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([empresaId, numeroDocHash])
+  @@index([empresaId, activo])
+}
+
+/// Regla reutilizable: «esta operación se reparte 60/30/10 entre estos tres».
+model ReglaDispersion {
+  id        String @id @default(cuid())
+  empresaId String
+
+  nombre      String
+  tipoReparto TipoReparto
+  activa      Boolean     @default(true)
+
+  empresa      EmpresaAdministrada      @relation(fields: [empresaId], references: [id])
+  destinos     ReglaDispersionDestino[]
+  dispersiones Dispersion[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([empresaId, nombre])
+}
+
+model ReglaDispersionDestino {
+  id             String @id @default(cuid())
+  /// Denormalizado a propósito: sin él la extensión de Prisma no puede filtrar esta
+  /// tabla y quedaría fuera de la RLS. Toda entidad de negocio cuelga de la empresa.
+  empresaId      String
+  reglaId        String
+  destinatarioId String
+
+  /// Uno de los dos según el tipoReparto de la regla; el otro va nulo.
+  porcentaje Decimal? @db.Decimal(7, 4)
+  montoFijo  Decimal? @db.Decimal(18, 2)
+
+  /// Orden de aplicación. También define quién absorbe el residuo del redondeo.
+  orden Int
+
+  empresa      EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  regla        ReglaDispersion     @relation(fields: [reglaId], references: [id])
+  destinatario Destinatario        @relation(fields: [destinatarioId], references: [id])
+
+  @@unique([reglaId, destinatarioId])
+  @@index([reglaId, orden])
+}
+
+model Dispersion {
+  id          String @id @default(cuid())
+  empresaId   String
+  operacionId String @unique
+
+  montoTotal Decimal          @db.Decimal(18, 2)
+  moneda     Moneda           @default(COP)
+  estado     EstadoDispersion @default(PENDIENTE)
+
+  /// Qué regla se usó. Null cuando el reparto se armó a mano.
+  reglaId String?
+
+  empresa   EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  operacion Operacion           @relation(fields: [operacionId], references: [id])
+  regla     ReglaDispersion?    @relation(fields: [reglaId], references: [id])
+  destinos  DispersionDestino[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([empresaId, estado])
+}
+
+model DispersionDestino {
+  id             String  @id @default(cuid())
+  empresaId      String
+  dispersionId   String
+  destinatarioId String?
+
+  /// Copia del nombre y la cuenta al momento de dispersar. Si mañana alguien
+  /// corrige la cuenta en el catálogo, el histórico tiene que seguir diciendo a
+  /// dónde se giró realmente.
+  nombreSnapshot String
+  cuentaSnapshot String?
+
+  monto      Decimal  @db.Decimal(18, 2)
+  porcentaje Decimal? @db.Decimal(7, 4)
+
+  estado         EstadoDestino @default(PENDIENTE)
+  ejecutadoEn    DateTime?
+  referenciaPago String?
+  observaciones  String?
+
+  empresa      EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  dispersion   Dispersion          @relation(fields: [dispersionId], references: [id])
+  destinatario Destinatario?       @relation(fields: [destinatarioId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([empresaId, estado])
+  @@index([dispersionId])
 }

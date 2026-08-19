@@ -12,3 +12,4 @@ export * from './dinero/index.js';
 export * from './tipos/api.js';
 export * from './esquemas/index.js';
 export * from './utilidades/nit.js';
+export * from './dispersion/index.js';

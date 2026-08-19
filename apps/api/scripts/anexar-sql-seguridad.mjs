@@ -18,9 +18,12 @@ import { fileURLToPath } from 'node:url';
 
 const raiz = join(dirname(fileURLToPath(import.meta.url)), '..');
 const carpetaMigraciones = join(raiz, 'prisma', 'migrations');
-const archivoSeguridad = join(raiz, 'prisma', 'sql', 'seguridad.sql');
+// Qué SQL anexar. Cada etapa trae el suyo con las políticas de sus tablas nuevas.
+const nombreSql = process.argv[2] ?? 'seguridad.sql';
+const archivoSeguridad = join(raiz, 'prisma', 'sql', nombreSql);
 
-const MARCA = '-- [seguridad.sql]';
+/** Marca de anexado: evita duplicar el SQL si el script corre dos veces. */
+const MARCA = '-- [' + nombreSql + ']';
 
 const migraciones = readdirSync(carpetaMigraciones)
   .filter((nombre) => statSync(join(carpetaMigraciones, nombre)).isDirectory())

@@ -18,6 +18,19 @@ const URL_APP = process.env.DATABASE_URL;
 const EMPRESA_A = 'rlstest_empresa_a';
 const EMPRESA_B = 'rlstest_empresa_b';
 
+/**
+ * Tablas que tienen `empresaId` pero deliberadamente **no** llevan RLS.
+ *
+ * `UsuarioEmpresa` es la que define a qué empresas entra cada quien. Aplicarle la
+ * política sería circular: para leer tus propios accesos habría que tener ya una
+ * empresa fijada, y la fijación depende justamente de esa lectura. Su control es
+ * RBAC en el backend, y está documentada así en docs/SEGURIDAD.md §1.
+ *
+ * La lista es corta a propósito. Agregar algo aquí es renunciar a una capa de
+ * defensa, y tiene que costar una explicación.
+ */
+const EXCEPCIONES_SIN_RLS = ['UsuarioEmpresa'];
+
 /** Se conecta como dueño del esquema: solo para preparar y limpiar los datos. */
 async function comoDueno<T>(fn: (cliente: Client) => Promise<T>): Promise<T> {
   const cliente = new Client({ connectionString: URL_DUENO });
@@ -85,6 +98,62 @@ describe('Aislamiento por empresa en PostgreSQL', () => {
   });
 
   afterAll(limpiar);
+
+  /**
+   * Esta es la prueba que más va a durar.
+   *
+   * No verifica una tabla concreta: le pregunta al catálogo de PostgreSQL cuáles
+   * tienen `empresaId` y exige que **todas** lleven RLS habilitada, forzada y con
+   * política. Así, la próxima tabla que alguien agregue sin su política falla aquí
+   * sin que nadie tenga que acordarse de venir a actualizar el test.
+   *
+   * Es el ítem del checklist de docs/SEGURIDAD.md §7, automatizado.
+   */
+  it('toda tabla con empresaId tiene RLS habilitada, forzada y con política', async () => {
+    const desprotegidas = await comoDueno((cliente) =>
+      cliente.query<{ tabla: string }>(
+        `SELECT c.relname AS tabla
+           FROM pg_class c
+           JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'empresaId' AND a.attnum > 0
+          WHERE c.relkind = 'r'
+            AND c.relnamespace = 'public'::regnamespace
+            AND c.relname <> ALL($1::text[])
+            AND NOT (c.relrowsecurity AND c.relforcerowsecurity
+                     AND (SELECT count(*) FROM pg_policies p WHERE p.tablename = c.relname) > 0)`,
+        [EXCEPCIONES_SIN_RLS],
+      ),
+    );
+
+    // El mensaje nombra las tablas: quien rompa esto tiene que saber cuáles son.
+    expect(desprotegidas.rows.map((fila) => fila.tabla)).toEqual([]);
+  });
+
+  it('las tablas de negocio con empresaId son las que esperamos', async () => {
+    const tablas = await comoDueno((cliente) =>
+      cliente.query<{ relname: string }>(
+        `SELECT c.relname
+           FROM pg_class c
+           JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'empresaId' AND a.attnum > 0
+          WHERE c.relkind = 'r' AND c.relnamespace = 'public'::regnamespace
+          ORDER BY c.relname`,
+      ),
+    );
+
+    // Si esta lista cambia, es porque se agregó o quitó una tabla de negocio.
+    // Actualizarla a conciencia es parte de revisar que su RLS quedó bien.
+    expect(tablas.rows.map((fila) => fila.relname)).toEqual([
+      'AuditLog',
+      'Cliente',
+      'Consecutivo',
+      'Destinatario',
+      'Dispersion',
+      'DispersionDestino',
+      'Operacion',
+      'ReglaDispersion',
+      'ReglaDispersionDestino',
+      'UsuarioEmpresa',
+    ]);
+  });
 
   it('el rol de la aplicación no puede saltarse las políticas', async () => {
     const roles = await comoApp((cliente) =>
