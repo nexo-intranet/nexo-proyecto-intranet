@@ -73,6 +73,21 @@ jobs:
             echo "Todavía no hay migraciones que aplicar."
           fi
 
+      # Secretos desechables, generados en cada corrida. No se escriben en el
+      # repositorio: un valor fijo aquí sería una credencial versionada, aunque
+      # solo sirviera para las pruebas.
+      - name: Generar secretos de prueba
+        run: |
+          {
+            echo "JWT_ACCESS_SECRET=$(openssl rand -base64 32)"
+            echo "JWT_REFRESH_SECRET=$(openssl rand -base64 32)"
+            echo "ENCRYPTION_KEY=$(openssl rand -base64 32)"
+            echo "HMAC_DOC_KEY=$(openssl rand -base64 32)"
+            echo "ENCRYPTION_KEY_VERSION=1"
+            echo "COOKIE_DOMAIN=localhost"
+            echo "CORS_ORIGIN=http://localhost:3000"
+          } >> "$GITHUB_ENV"
+
       - run: pnpm typecheck
       - run: pnpm lint
       - run: pnpm test

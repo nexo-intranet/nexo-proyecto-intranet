@@ -1,3 +1,4 @@
+import { randomBytes } from 'node:crypto';
 import { config as cargarEnv } from 'dotenv';
 import { INestApplication } from '@nestjs/common';
 import { Test } from '@nestjs/testing';
@@ -23,7 +24,9 @@ cargarEnv({ path: ['../../.env', '.env'], quiet: true });
 const EMPRESA_PROPIA = 'e2e_empresa_propia';
 const EMPRESA_AJENA = 'e2e_empresa_ajena';
 const EMAIL = 'e2e.equipo@nexoadministracion.com';
-const PASSWORD = 'ClaveDePrueba2026';
+// Se genera en cada corrida en vez de quedar escrita: una credencial fija en el
+// repositorio, aunque sea de prueba, es exactamente lo que gitleaks debe marcar.
+const PASSWORD = `Prueba${randomBytes(12).toString('base64url')}Aa1`;
 
 async function comoDueno<T>(fn: (cliente: Client) => Promise<T>): Promise<T> {
   const cliente = new Client({ connectionString: process.env.DIRECT_URL });

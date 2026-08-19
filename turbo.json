@@ -4,6 +4,7 @@
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
+      "env": ["DIRECT_URL", "DATABASE_URL", "NEXT_PUBLIC_APP_URL", "API_INTERNAL_URL"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": {
@@ -17,7 +18,22 @@
       "dependsOn": ["^build"]
     },
     "test": {
-      "dependsOn": ["^build"]
+      "dependsOn": ["^build"],
+      "cache": false,
+      "env": [
+        "DATABASE_URL",
+        "DIRECT_URL",
+        "JWT_ACCESS_SECRET",
+        "JWT_REFRESH_SECRET",
+        "JWT_ACCESS_TTL",
+        "JWT_REFRESH_TTL",
+        "ENCRYPTION_KEY",
+        "ENCRYPTION_KEY_VERSION",
+        "HMAC_DOC_KEY",
+        "COOKIE_DOMAIN",
+        "CORS_ORIGIN",
+        "API_PORT"
+      ]
     }
   }
 }
