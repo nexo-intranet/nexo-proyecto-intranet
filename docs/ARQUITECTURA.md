@@ -78,7 +78,9 @@ apps/api/
    │  ├─ clientes/                (etapa 4)
    │  ├─ empleados/               (etapa 5)
    │  ├─ contabilidad/            (etapa 6)
-   │  └─ cumplimiento/            (etapa 7)
+   │  ├─ cumplimiento/            (etapa 7 — incluye políticas y aceptaciones)
+   │  ├─ tramites/                (etapa 8 — bandeja interna)
+   │  └─ publico/                 (etapa 9 — única superficie sin sesión)
    │
    └─ integrations/
       ├─ invoicing/
@@ -111,7 +113,8 @@ apps/web/src/
 ├─ app/
 │  ├─ (publico)/
 │  │  ├─ ingresar/                login
-│  │  └─ verificar/               segundo factor
+│  │  ├─ verificar/               segundo factor
+│  │  └─ tramites/                formulario público y consulta por código (etapa 9)
 │  ├─ (app)/
 │  │  ├─ layout.tsx               barra lateral + barra superior + ⌘K
 │  │  ├─ page.tsx                 tablero de inicio
@@ -267,7 +270,7 @@ efímero) y nunca en un bucket público.
 
 ---
 
-## 4. Mapa de las ocho etapas
+## 4. Mapa de las diez etapas
 
 Cada etapa se entrega funcionando antes de empezar la siguiente. Al iniciar cada
 una se propone su esquema Prisma y sus rutas, y se espera confirmación (sección 10
@@ -321,18 +324,33 @@ layout, sistema de diseño, tabla base, generador de PDF base.
 
 ### Etapa 7 — Cumplimiento
 
-|               |                                                                                                                                                                                                                                                                                                                      |
-| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Entidades** | `RegistroCumplimiento`, `ReporteUiaf`, `PeriodoReporte`                                                                                                                                                                                                                                                              |
-| **Rutas**     | `GET/POST /cumplimiento/registros` · `GET/POST /uiaf/reportes` · `GET /uiaf/reportes/:id/exportar?formato=excel\|pdf` · `GET /uiaf/reportes/:id/sirel` · `GET /uiaf/periodos`                                                                                                                                        |
-| **Núcleo**    | Motor de reportes con exportación Excel/PDF ahora. Archivo SIREL detrás de `UiafReportFormatter` con `TODO [CONFIRMAR]` (el formato depende del sector del sujeto obligado). Envío manual. Alertas de reportes de ausencia trimestrales, con aviso antes del día 10 del mes siguiente al trimestre. Sin KYC externo. |
+|               |                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
+| ------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entidades** | `RegistroCumplimiento`, `ReporteUiaf`, `PeriodoReporte`, `Politica`, `VersionPolitica`, `AceptacionPolitica`                                                                                                                                                                                                                                                                                                                                                                                |
+| **Rutas**     | `GET/POST /cumplimiento/registros` · `GET/POST /uiaf/reportes` · `GET /uiaf/reportes/:id/exportar?formato=excel\|pdf` · `GET /uiaf/reportes/:id/sirel` · `GET /uiaf/periodos`                                                                                                                                                                                                                                                                                                               |
+| **Núcleo**    | Motor de reportes con exportación Excel/PDF ahora. Archivo SIREL detrás de `UiafReportFormatter` con `TODO [CONFIRMAR]`. Envío manual. Alertas de reportes de ausencia trimestrales. Sin KYC externo. **Políticas versionadas:** `VersionPolitica` es inmutable una vez publicada; editarla dejaría las aceptaciones ya firmadas apuntando a un texto que la persona nunca vio. Antes de registrar una consulta el sistema exige una aceptación vigente, y ofrece capturarla en el momento. |
 
-### Etapa 8 — Administración General completa
+### Etapa 8 — Trámites de firmas: bandeja interna
 
-|            |                                                                                                                                             |
-| ---------- | ------------------------------------------------------------------------------------------------------------------------------------------- |
-| **Rutas**  | `GET /metricas/tablero` · `GET /metricas/:modulo` · visor de audit log con filtros · carga anual del calendario · `POST /exportar/:entidad` |
-| **Núcleo** | Exportación a Excel/PDF desde cualquier módulo, respetando filtros activos y permisos, y registrada en el audit log.                        |
+|               |                                                                                                                                                                                                                                                                                                                                  |
+| ------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Entidades** | `SolicitudTramite`, `DocumentoTramite`, `EventoTramite`                                                                                                                                                                                                                                                                          |
+| **Rutas**     | `GET/POST /tramites` · `GET /tramites/:id` · `POST /tramites/:id/estado` · `POST /tramites/:id/asignar` · `GET /tramites/:id/documentos/:documentoId` (URL firmada) · `POST /tramites/:id/promover-cliente`                                                                                                                      |
+| **Núcleo**    | Nexo hace la firma en una plataforma externa: **este módulo no firma ni notariza nada**, es bandeja y seguimiento. Máquina de estados con `EventoTramite` append-only. Los adjuntos se sirven siempre por el backend con URL firmada, nunca por enlace directo. Solicitudes creadas a mano; el formulario público llega en la 9. |
+
+### Etapa 9 — Formulario público de trámites
+
+|            |                                                                                                                                                                                                                                                                                               |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rutas**  | `POST /publico/tramites` · `GET /publico/tramites/estado?codigo=` · `GET /publico/politica-vigente`                                                                                                                                                                                           |
+| **Núcleo** | **Única superficie expuesta a internet abierto.** Va de última a propósito: cuando llega, el manejo de archivos, políticas y estados ya está probado por dentro. No comparte sesión ni cookies con la intranet, vive bajo el prefijo `/publico`, y su detalle está en `docs/SEGURIDAD.md` §9. |
+
+### Etapa 10 — Administración General completa
+
+|            |                                                                                                                                                                                     |
+| ---------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Rutas**  | `GET /metricas/tablero` · `GET /metricas/:modulo` · visor de audit log con filtros · carga anual del calendario · `GET/POST /politicas` y sus versiones · `POST /exportar/:entidad` |
+| **Núcleo** | Exportación a Excel/PDF desde cualquier módulo, respetando filtros activos y permisos, y registrada en el audit log. Gestión de políticas y publicación de versiones.               |
 
 ---
 

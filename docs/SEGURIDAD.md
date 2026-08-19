@@ -180,13 +180,12 @@ frontend, con `credentials: true`. Nunca `*`, nunca reflejo del header `Origin`.
 
 ### 3.3 Superficie pública de la API
 
-Solo tres rutas son accesibles sin sesión, y cada una está acotada:
-
-| Ruta                   | Protección                                                                                                  |
-| ---------------------- | ----------------------------------------------------------------------------------------------------------- |
-| `GET /salud`           | sin datos de negocio; no revela versiones ni configuración                                                  |
-| `POST /auth/*`         | límite de tasa por IP y por email, bloqueo tras 5 intentos                                                  |
-| `POST /webhooks/siigo` | firma HMAC verificada, cuerpo crudo, idempotencia por id de evento, rechazo de eventos con más de 5 minutos |
+| Ruta                   | Etapa | Protección                                                                                                  |
+| ---------------------- | ----- | ----------------------------------------------------------------------------------------------------------- |
+| `GET /salud`           | 1     | sin datos de negocio; no revela versiones ni configuración                                                  |
+| `POST /auth/*`         | 1     | límite de tasa por IP y por email, bloqueo tras 5 intentos                                                  |
+| `POST /webhooks/siigo` | 6     | firma HMAC verificada, cuerpo crudo, idempotencia por id de evento, rechazo de eventos con más de 5 minutos |
+| `/publico/tramites*`   | 9     | formulario de trámites — su régimen completo está en **§9**                                                 |
 
 Todo lo demás exige sesión válida **y** permiso de módulo **y** empresa activa
 autorizada. No hay endpoints "internos" sin autenticar. Documentación OpenAPI:
@@ -231,6 +230,12 @@ deshabilitada en producción o detrás de sesión de administrador.
   acción explícita y **queda en el audit log**.
 - Toda exportación masiva se registra con acción `EXPORTAR`: quién, qué filtros, cuántos
   registros y a qué empresa pertenecían.
+- **Consentimiento verificable** (brief §4.14). Cada aceptación guarda qué versión de
+  la política se aceptó, cuándo, desde qué IP y por quién. `VersionPolitica` es
+  **inmutable una vez publicada**: si se pudiera editar, las aceptaciones ya firmadas
+  quedarían apuntando a un texto que la persona nunca vio, y el consentimiento dejaría
+  de ser prueba de nada. Cambiar una política es publicar una versión nueva; las
+  aceptaciones anteriores siguen siendo válidas contra su propia versión.
 - **Logs y trazas nunca contienen** contraseñas, tokens, secretos TOTP, credenciales de
   proveedores, números de documento ni cuerpos completos de peticiones de autenticación.
   Se implementa una lista de campos redactados en el logger, y el filtro de excepciones
@@ -246,9 +251,14 @@ deshabilitada en producción o detrás de sesión de administrador.
   el cliente. La validación del cliente es comodidad, no control.
 - Prisma parametriza las consultas; cualquier `$queryRaw` usa plantillas con
   parámetros, jamás concatenación de strings.
-- Subida de archivos: tamaño máximo, tipo verificado por _magic bytes_ y no por
-  extensión, nombre generado por el servidor, bucket **privado** con URLs firmadas de
-  5 minutos. Nada se sirve desde un bucket público.
+- **Subida de archivos** (brief §4.13): solo PDF, JPG y PNG, con el tipo verificado
+  por _magic bytes_ y no por la extensión ni por el `Content-Type` que declare el
+  cliente —los dos los escribe quien sube el archivo—. Límite por archivo y por
+  solicitud. El nombre lo genera el servidor: conservar el original permitiría
+  travesía de rutas y deja que alguien elija el nombre de un objeto en el bucket.
+- Los archivos van a un bucket **privado** y se sirven **siempre a través del
+  backend**, que verifica permisos y devuelve una URL firmada de 5 minutos. Nunca un
+  enlace directo: una URL de bucket es un permiso permanente para quien la tenga.
 - Los PDF generados también van a almacenamiento privado: una orden de pago o un
   recibo de nómina no debe ser accesible por URL adivinable.
 - Escapado de fórmulas al exportar a Excel (`=`, `+`, `-`, `@` al inicio de celda) para
@@ -291,3 +301,65 @@ Estos puntos no se posponen; son parte de los cimientos:
 Lo que queda para cuando aparezca su etapa: firma del webhook de Siigo (Etapa 6) y
 cifrado de documentos de identidad en uso real (Etapas 4 y 5) — la herramienta ya
 existe desde la Etapa 1.
+
+---
+
+## 9. La superficie pública de trámites (Etapa 9)
+
+Todo lo anterior protege un sistema al que solo entra gente con cuenta. El formulario
+de trámites rompe esa premisa: es **la única puerta abierta a internet**, y quien la
+toca no tiene sesión, ni identidad verificada, ni nada que perder por intentarlo.
+
+El brief la coloca de última a propósito. Cuando llegue, el manejo de archivos, las
+políticas y la máquina de estados ya llevan meses probados por dentro, y lo único
+nuevo será la exposición.
+
+### 9.1 Separación de la intranet
+
+- Vive bajo el prefijo `/publico`, con su propio módulo y sus propios controladores.
+  **No comparte sesión ni cookies con la intranet**: una vulnerabilidad ahí no puede
+  convertirse en acceso al sistema interno.
+- Las cookies de sesión no se emiten ni se leen en estas rutas. Si alguna necesitara
+  estado, sería una cookie propia con nombre y alcance distintos.
+- No devuelve **ningún** dato del sistema. Ni nombres de empresas, ni de usuarios, ni
+  conteos, ni mensajes de error que revelen si algo existe.
+
+### 9.2 El código de seguimiento
+
+Es lo único que permite consultar el estado de una solicitud, así que decide el
+riesgo entero de la consulta pública.
+
+- Aleatorio y de entropía suficiente para que probar al azar no sirva de nada. Nada
+  de consecutivos ni de nada derivado de la fecha o del documento del solicitante.
+- Un código válido devuelve **solo el estado**. No los documentos, no las notas
+  internas, no a quién está asignada la solicitud.
+- Un código inválido devuelve la **misma respuesta genérica** que uno válido pero
+  inexistente, y en el mismo tiempo. Si la respuesta se distingue, el endpoint se
+  convierte en un oráculo para enumerar solicitudes.
+- Límite de tasa por IP también en la consulta, no solo en el envío.
+
+### 9.3 El envío
+
+- Límite de tasa por IP, más estricto que el del resto de la API.
+- Protección anti-bot. `TODO [CONFIRMAR]` cuál: un servicio externo como Turnstile
+  implica que el navegador hable con un tercero, lo que choca con §3.1. La alternativa
+  es una prueba propia sin dependencias externas, más débil pero sin terceros.
+- Validación de tipo y tamaño **en el servidor**: solo PDF, JPG y PNG verificados por
+  _magic bytes_, con límite por archivo y por solicitud (§6).
+- Los archivos van al bucket privado, con nombre generado por el servidor, y **no se
+  pueden recuperar desde la ruta pública**. Solo los descarga el equipo desde la
+  bandeja interna, con URL firmada.
+- La aceptación de la política es obligatoria y queda registrada con su versión, la
+  fecha y la IP, igual que en el módulo de Cumplimiento (§5).
+
+### 9.4 A qué empresa pertenece lo que llega
+
+Una solicitud pública nace sin empresa activa: no hay sesión que la fije. Se atribuye
+a **Nexo**, igual que se resolvió con los registros administrativos del audit log. El
+equipo puede reasignarla después desde la bandeja.
+
+### 9.5 Antes de publicarla
+
+Revisión de seguridad completa antes de exponer la ruta, con la lista de arriba como
+checklist. Es la única parte del sistema donde un error no se descubre en una reunión
+interna sino en un log de acceso.

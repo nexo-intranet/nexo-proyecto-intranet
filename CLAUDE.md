@@ -5,7 +5,7 @@ Léelo por completo antes de trabajar en cualquier módulo o tarea.
 
 Documentos derivados, ya aprobados por el cliente:
 
-- `docs/ARQUITECTURA.md` — estructura del monorepo, convenciones y las 8 etapas
+- `docs/ARQUITECTURA.md` — estructura del monorepo, convenciones y las 10 etapas
 - `docs/ETAPA-01.md` — cimientos: esquema núcleo, auth, RBAC, audit log (terminada)
 - `docs/ETAPA-02.md` — operaciones: propuesta de esquema y rutas, pendiente de confirmar
 - `docs/SEGURIDAD.md` — **vinculante en todas las etapas**: RLS, manejo de secretos,
@@ -14,10 +14,15 @@ Documentos derivados, ya aprobados por el cliente:
 
 ## Resumen rápido
 
-Intranet interna para Nexo Administración Integral (Medellín, Colombia).
+Intranet para Nexo Administración Integral (Medellín, Colombia).
 Multiempresa: maneja datos de Nexo y de las empresas que administra.
-Siete módulos: Operaciones, Egresos, Empleados, Contabilidad,
-Cumplimiento, Clientes, Administración General.
+Ocho módulos: Operaciones, Egresos, Empleados, Contabilidad,
+Cumplimiento, Clientes, Administración General y Trámites de Firmas.
+
+**Dos superficies separadas.** Casi todo es intranet privada sin registro público.
+La excepción es el formulario público de trámites (etapa 9), única parte expuesta a
+internet abierto: rutas aparte bajo `/publico`, sin compartir sesión ni cookies con
+la intranet. Ver `docs/SEGURIDAD.md` §9.
 
 ## Stack
 
@@ -37,6 +42,10 @@ Monorepo: apps/api, apps/web, packages/shared
 - RBAC se valida en el backend, no solo se oculta en el frontend
 - Interfaz blanca estilo fintech — dorado solo como acento, sin modo oscuro
 - Todo el texto de la UI en español
+- Archivos subidos: solo PDF/JPG/PNG verificados por magic bytes, bucket privado,
+  servidos siempre por el backend con URL firmada — nunca por enlace directo
+- Las políticas se versionan y `VersionPolitica` es inmutable una vez publicada:
+  editarla dejaría las aceptaciones firmadas apuntando a un texto que nadie vio
 
 ## Antes de escribir código en cualquier módulo nuevo
 

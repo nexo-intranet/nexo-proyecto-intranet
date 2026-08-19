@@ -12,7 +12,7 @@ Nexo administra, con aislamiento estricto entre ellas.
 | Documento                                    | Contenido                                                                    |
 | -------------------------------------------- | ---------------------------------------------------------------------------- |
 | [docs/BRIEF.md](docs/BRIEF.md)               | Brief del cliente. La fuente de verdad del alcance.                          |
-| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Estructura del monorepo, convenciones y mapa de las 8 etapas.                |
+| [docs/ARQUITECTURA.md](docs/ARQUITECTURA.md) | Estructura del monorepo, convenciones y mapa de las 10 etapas.               |
 | [docs/ETAPA-01.md](docs/ETAPA-01.md)         | Esquema Prisma, rutas de la API y criterio de terminado de la etapa actual.  |
 | [docs/SEGURIDAD.md](docs/SEGURIDAD.md)       | **Vinculante.** RLS, secretos, superficie pública, sesión, datos personales. |
 

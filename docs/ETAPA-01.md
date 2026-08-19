@@ -42,6 +42,10 @@ enum ModuloSistema {
   ADMINISTRACION
 }
 
+// PENDIENTE: el brief actualizado agrega el módulo 08, Trámites de Firmas. El valor
+// TRAMITES entra al enum en la Etapa 8, no antes: agregarlo ahora pondría en la barra
+// lateral una entrada que no lleva a ninguna parte.
+
 enum NombreRol {
   ADMINISTRADOR
   EQUIPO_INTERNO

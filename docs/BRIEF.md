@@ -10,7 +10,12 @@ Eres el desarrollador senior a cargo de este proyecto. Lee el brief completo ant
 
 Hoy toda su operación vive en Excel y WhatsApp: registran operaciones a mano, preparan dispersiones en hojas de cálculo, generan cartas laborales manualmente y buscan transacciones por hash abriendo archivos.
 
-**Objetivo:** una intranet web de uso interno que reemplace ese flujo. No es un SaaS multiempresa ni tiene registro público — los usuarios los crea un administrador.
+**Objetivo:** una intranet web que reemplace ese flujo.
+
+La aplicación tiene **dos superficies bien separadas**:
+
+- **Intranet privada** — la mayor parte del sistema. Sin registro público; los usuarios los crea un administrador.
+- **Formulario público de trámites** — una sola página accesible sin cuenta, donde terceros radican solicitudes de firma y notarización (módulo 08). Es la única parte expuesta a internet abierto y debe tratarse como tal.
 
 ---
 
@@ -18,19 +23,15 @@ Hoy toda su operación vive en Excel y WhatsApp: registran operaciones a mano, p
 
 Estas ya están resueltas. Constrúyelas así.
 
-| #   | Tema                     | Decisión                                                                                                                                                                                                                                                                                                                           |
-| --- | ------------------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| 1   | ¿De quién son los datos? | **Ambos.** El sistema maneja la información de Nexo _y_ la de las empresas que Nexo administra. `EmpresaAdministrada` es entidad raíz y **toda** consulta se filtra por ella. Nexo es la primera fila de esa tabla.                                                                                                                |
-| 2   | Facturación electrónica  | **Se integra con proveedor externo, no se construye.** El cliente ya trabaja con Siigo, Facturatech y Dataico. Arrancar con **Siigo** (documentación pública) detrás de la interfaz `InvoicingProvider`, con los otros dos como implementaciones futuras del mismo contrato.                                                       |
-| 3   | Calendario tributario    | Tabla cargable por año desde el panel admin. Obligaciones a cubrir: **renta, retenciones, industria y comercio (ICA), exógena.** ICA es municipal, no DIAN — la tabla necesita campo `municipio`.                                                                                                                                  |
-| 4   | Reportes UIAF            | El cliente quiere todos, en el formato oficial de cargue a SIREL. **El formato depende del sector del sujeto obligado y aún no está confirmado.** Construir el motor de reportes con exportación a Excel/PDF ahora, y dejar la generación del archivo SIREL detrás de la interfaz `UiafReportFormatter` con un `TODO [CONFIRMAR]`. |
-| 5   | Nómina                   | **Abierta — ver abajo.**                                                                                                                                                                                                                                                                                                           |
-
-### Decisión pendiente: nómina
-
-El cliente pidió que el sistema calcule la nómina completa. Eso implica seguridad social, parafiscales, prestaciones, retención en la fuente por UVT, y transmisión de nómina electrónica a la DIAN — un producto en sí mismo, con exposición legal si un cálculo falla, y con parámetros que cambian cada año (SMMLV, UVT, auxilio de transporte).
-
-**Implementa por ahora la versión documental:** los valores de devengados y deducciones se ingresan, el sistema los totaliza y genera el PDF con consecutivo. Aísla el cálculo detrás de `PayrollCalculator` para poder sustituirlo. Deja `TODO [CONFIRMAR]` con la pregunta de si se construye el motor de cálculo o se integra con un proveedor de nómina electrónica.
+| #   | Tema                       | Decisión                                                                                                                                                                                                                                                                                                                                                    |
+| --- | -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 1   | ¿De quién son los datos?   | **Ambos.** El sistema maneja la información de Nexo _y_ la de las empresas que Nexo administra. `EmpresaAdministrada` es entidad raíz y **toda** consulta se filtra por ella. Nexo es la primera fila de esa tabla.                                                                                                                                         |
+| 2   | Facturación electrónica    | **Se integra con proveedor externo, no se construye.** El cliente ya trabaja con Siigo, Facturatech y Dataico. Arrancar con **Siigo** (documentación pública) detrás de la interfaz `InvoicingProvider`, con los otros dos como implementaciones futuras del mismo contrato.                                                                                |
+| 3   | Calendario tributario      | Tabla cargable por año desde el panel admin. Obligaciones a cubrir: **renta, retenciones, industria y comercio (ICA), exógena.** ICA es municipal, no DIAN — la tabla necesita campo `municipio`.                                                                                                                                                           |
+| 4   | Reportes UIAF              | El cliente quiere todos, en el formato oficial de cargue a SIREL. **El formato depende del sector del sujeto obligado y aún no está confirmado.** Construir el motor de reportes con exportación a Excel/PDF ahora, y dejar la generación del archivo SIREL detrás de la interfaz `UiafReportFormatter` con un `TODO [CONFIRMAR]`.                          |
+| 5   | Nómina                     | **Versión documental confirmada.** Los devengados y deducciones se ingresan manualmente, el sistema totaliza y genera el PDF con consecutivo. **No** se calcula seguridad social, prestaciones ni retención. Aísla el cálculo detrás de `PayrollCalculator` para poder sustituirlo más adelante — el cliente quiere agregar fórmulas en una fase posterior. |
+| 6   | Políticas y consentimiento | El cliente hoy usa un formulario aparte para que la persona acepte la política de tratamiento de datos antes de una consulta. Eso entra al **módulo de Cumplimiento** con versionado de políticas y registro de aceptación (ver módulo 05).                                                                                                                 |
+| 7   | Trámites de firmas         | El cliente opera hoy con un Google Form para recibir solicitudes de firma digital, autenticación y notarización. Se reemplaza por el **módulo 08**, que incluye un formulario público. Ver la sección 6b.                                                                                                                                                   |
 
 ---
 
@@ -89,7 +90,10 @@ Estas aplican a todo el sistema. Si alguna se rompe en algún módulo, es un bug
 9. **Credenciales de terceros cifradas.** Las llaves de Siigo/Facturatech/Dataico de cada empresa se guardan cifradas, nunca en texto plano ni en el frontend.
 10. **Todo en español.** UI, mensajes de error, nombres de campos visibles. El código y los identificadores en inglés.
 11. **Zona horaria:** `America/Bogota`. Guardar en UTC, mostrar en hora local.
-12. **Tests** en la lógica de dinero, dispersión, consecutivos y permisos. El resto puede ir sin test.
+12. **La superficie pública es hostil por defecto.** El formulario de trámites vive en rutas separadas, no comparte sesión con la intranet y no expone ningún dato del sistema. Lleva rate limiting por IP, protección anti-bot, y validación estricta de tipo y tamaño de archivo. Nunca devuelve información sobre solicitudes existentes salvo por código de seguimiento.
+13. **Archivos subidos.** Solo PDF, JPG y PNG. Límite por archivo y por solicitud. Se guardan en almacenamiento privado con URLs firmadas de vida corta — nunca públicas ni adivinables. Se sirven siempre a través del backend, que verifica permisos.
+14. **Consentimiento verificable.** Toda aceptación de política guarda qué versión se aceptó, cuándo, desde qué IP y por quién. Las políticas se versionan: publicar una nueva versión no invalida ni modifica las aceptaciones anteriores.
+15. **Tests** en la lógica de dinero, dispersión, consecutivos, permisos y aislamiento por empresa. El resto puede ir sin test.
 
 ---
 
@@ -137,6 +141,25 @@ RegistroCumplimiento id, empresaId, operacionId, tipoConsulta, resultado,
                      observaciones, realizadoPor
 ReporteUiaf          id, empresaId, tipoReporte, periodo, estado,
                      archivoUrl, generadoPor
+
+Politica             id, empresaId, tipo (tratamientoDatos|interna|otra),
+                     nombre, activa
+VersionPolitica      id, politicaId, version, contenido, vigenteDesde,
+                     publicadaPor        // inmutable una vez publicada
+AceptacionPolitica   id, versionPoliticaId, empresaId, nombreCompleto,
+                     tipoDoc, numeroDoc, email, aceptadaEn, ip,
+                     origen (consultaInterna|formularioPublico),
+                     solicitudTramiteId?, registroCumplimientoId?
+
+SolicitudTramite     id, empresaId, codigoSeguimiento (único),
+                     tipoTramite (firmaDigital|autenticacion|notarizacion),
+                     nombreCompleto, tipoDoc, numeroDoc, email, telefono,
+                     observaciones, estado, asignadoA, radicadaEn
+DocumentoTramite     id, solicitudId, nombreArchivo, tipoMime, tamano,
+                     rutaAlmacenamiento, subidoEn
+EventoTramite        id, solicitudId, estadoAnterior, estadoNuevo,
+                     nota, usuarioId, createdAt   // append-only
+
 AuditLog             id, usuarioId, empresaId, accion, entidad, entidadId,
                      valorAnterior, valorNuevo, ip, createdAt
 ```
@@ -145,11 +168,13 @@ AuditLog             id, usuarioId, empresaId, accion, entidad, entidadId,
 
 `municipio` en `CalendarioTributario` solo aplica a ICA; para renta, retenciones y exógena va nulo.
 
+`VersionPolitica` es inmutable una vez publicada. Cambiar una política significa crear una versión nueva, nunca editar la anterior — de lo contrario las aceptaciones ya registradas quedarían apuntando a un texto que la persona nunca vio.
+
 ---
 
 ## 6. Módulos
 
-Siete módulos. Todos comparten la barra lateral, el sistema de permisos y el audit log.
+Ocho módulos. Todos comparten la barra lateral, el sistema de permisos y el audit log.
 
 ### 01 · Operaciones
 
@@ -169,7 +194,7 @@ Siete módulos. Todos comparten la barra lateral, el sistema de permisos y el au
 ### 03 · Empleados
 
 - Ficha del empleado con los datos necesarios para generar documentos
-- Recibo de nómina por período — devengados y deducciones ingresados, totalizados por el sistema (ver decisión pendiente de nómina)
+- Recibo de nómina por período — devengados y deducciones ingresados, totalizados por el sistema (ver decisión 5)
 - Carta laboral generada desde plantilla
 - Certificado de ingresos y retenciones
 - Los tres documentos salen en PDF con la identidad de la empresa administrada, no la de Nexo
@@ -189,6 +214,9 @@ Siete módulos. Todos comparten la barra lateral, el sistema de permisos y el au
 
 - Consultas de verificación previas a aprobar una operación
 - Registro de cumplimiento, separado del registro operativo
+- **Políticas internas por empresa.** Nexo maneja sus propias políticas y también las de las empresas que administra. Cada política se crea, se versiona y se publica; las versiones anteriores quedan en el historial y nunca se editan.
+- **Registro de aceptación de la política de tratamiento de datos.** Reemplaza el formulario suelto que usan hoy. Antes de dejar registrar una consulta, el sistema exige que exista una aceptación vigente de la persona consultada. Si no la hay, ofrece capturarla en el momento: se muestra el texto de la versión vigente, la persona diligencia sus datos y acepta, y queda guardado qué versión aceptó, cuándo y desde qué IP.
+- Consulta de aceptaciones: buscar por documento y ver qué políticas aceptó, en qué versión y en qué fecha. Exportable como soporte.
 - Motor de reportes UIAF con exportación a Excel y PDF
 - Generación del archivo de cargue a SIREL detrás de la interfaz `UiafReportFormatter` — **el formato exacto depende del sector del sujeto obligado y aún no está confirmado.** Deja `TODO [CONFIRMAR]`.
 - El envío a SIREL es manual: el sistema genera el archivo, una persona lo carga. No existe API pública de envío.
@@ -208,7 +236,56 @@ Siete módulos. Todos comparten la barra lateral, el sistema de permisos y el au
 - Panel de métricas con indicadores por módulo
 - Visor de audit log con filtros por usuario, fecha y entidad
 - Carga del calendario tributario del año
+- Gestión de políticas y sus versiones
 - Exportación a Excel y PDF desde cualquier módulo
+
+### 08 · Trámites de Firmas
+
+Reemplaza el Google Form que usan hoy para recibir solicitudes de firma digital, autenticación y notarización.
+
+**Importante sobre el alcance:** Nexo hace el trámite de la firma en una plataforma externa. Este módulo **no firma ni notariza nada** — es la bandeja de entrada y el seguimiento del trámite. No construyas motor de firma ni integres proveedor de firma electrónica.
+
+Bandeja interna:
+
+- Lista de solicitudes recibidas con filtros por estado, tipo de trámite y fecha
+- Detalle de la solicitud con los datos del solicitante y sus documentos adjuntos
+- Máquina de estados: `recibida → en revisión → documentos incompletos → en trámite → finalizada → entregada`, más `rechazada`. Cada cambio de estado queda en `EventoTramite` con nota y usuario.
+- Asignación de la solicitud a un miembro del equipo
+- Notificación por correo al solicitante en cada cambio de estado relevante
+- Descarga de los documentos adjuntos, siempre a través del backend con URL firmada
+- Un solicitante que no exista como cliente puede promoverse a `Cliente` desde aquí, sin volver a digitar los datos
+
+---
+
+## 6b. Formulario público de trámites
+
+Página pública, sin cuenta, en ruta separada de la intranet (por ejemplo `/tramites/nuevo`). Es la única superficie del sistema expuesta a internet abierto.
+
+**Qué pide:**
+
+- Tipo de trámite: firma digital, autenticación o notarización
+- Datos del solicitante: nombre completo, tipo y número de documento, correo, teléfono
+- Descripción de lo que necesita
+- Carga de los documentos (PDF, JPG, PNG)
+- **Aceptación obligatoria de la política de tratamiento de datos**, mostrando el texto de la versión vigente. Sin aceptación no se envía. Queda registrada en `AceptacionPolitica` igual que en el módulo de Cumplimiento.
+
+**Al enviar:**
+
+- Se genera un `codigoSeguimiento` corto y no adivinable
+- Se muestra ese código en pantalla y se envía por correo al solicitante
+- Llega la notificación al equipo de Nexo
+- La solicitud aparece en la bandeja del módulo 08 en estado `recibida`
+
+**Consulta de estado:** página pública donde el solicitante ingresa su código y ve **solo** el estado de su trámite. Nada más: ni sus documentos, ni notas internas, ni datos de otras solicitudes.
+
+**Seguridad, no opcional:**
+
+- Rate limiting por IP en el envío del formulario
+- Protección anti-bot
+- Validación de tipo y tamaño de archivo en el servidor, no solo en el navegador
+- Los archivos van a almacenamiento privado; jamás una URL pública
+- Esta ruta no comparte sesión ni cookies con la intranet
+- El código de seguimiento no revela información si se prueba al azar — respuesta genérica ante código inválido
 
 ---
 
@@ -257,8 +334,8 @@ Radios contenidos (`4px` a `6px`). Sin sombras salvo en elementos flotantes real
 │ Contab.  │  │ tabla densa, ordenable,          │  │
 │ Cumplim. │  │ paginada en servidor             │  │
 │ Clientes │  │                                  │  │
-│ Admin    │  └──────────────────────────────────┘  │
-│          │                                        │
+│ Trámites │  └──────────────────────────────────┘  │
+│ Admin    │                                        │
 │          │                                        │
 └──────────┴────────────────────────────────────────┘
 ```
@@ -295,7 +372,7 @@ Radios contenidos (`4px` a `6px`). Sin sombras salvo en elementos flotantes real
 
 ## 8. Orden de construcción
 
-No construyas los siete módulos en paralelo. Sigue este orden y entrega cada etapa funcionando antes de pasar a la siguiente.
+No construyas los ocho módulos en paralelo. Sigue este orden y entrega cada etapa funcionando antes de pasar a la siguiente.
 
 **Etapa 1 — Cimientos**
 Monorepo, Prisma con el esquema núcleo, **aislamiento por `empresaId` a nivel de repositorio**, selector de empresa en la barra superior, autenticación con 2FA, RBAC, audit log, layout con barra lateral, sistema de diseño con los tokens, tabla base reutilizable, generador de PDF base.
@@ -313,9 +390,15 @@ Valida el patrón de "registro genera documento con consecutivo", que después s
 
 **Etapa 6 — Contabilidad** (incluye calendario tributario)
 
-**Etapa 7 — Cumplimiento**
+**Etapa 7 — Cumplimiento** (incluye políticas versionadas y registro de aceptación)
 
-**Etapa 8 — Administración General completa** (métricas, visor de audit log, carga del calendario)
+**Etapa 8 — Trámites de Firmas: bandeja interna**
+Máquina de estados, adjuntos y notificaciones, con solicitudes creadas a mano desde la intranet. Sin formulario público todavía.
+
+**Etapa 9 — Formulario público de trámites**
+Va de última a propósito: es la única superficie expuesta y conviene construirla cuando el manejo de archivos, políticas y estados ya esté probado por dentro. Incluye rate limiting, anti-bot, consulta por código de seguimiento y revisión de seguridad antes de publicar.
+
+**Etapa 10 — Administración General completa** (métricas, visor de audit log, carga del calendario, gestión de políticas)
 
 ---
 
