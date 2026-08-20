@@ -1,38 +1,79 @@
 @import 'tailwindcss';
 
 /**
- * Sistema de diseño — interfaz blanca estilo fintech (brief §7).
+ * Sistema de diseño — tinta sobre papel.
  *
- * Los valores salen del brief y no se improvisan. Tres reglas que gobiernan todo
- * lo demás:
- *   · el dorado es acento, nunca relleno de secciones grandes
- *   · la jerarquía se construye con espaciado y peso tipográfico, no con cajas de color
- *   · bordes de un pixel en vez de sombras, salvo en elementos realmente flotantes
+ * Esto se usa ocho horas al día para mover plata de terceros. No busca impacto
+ * visual: busca que quien lo mira confíe en que la cifra en pantalla es la cifra
+ * correcta. La referencia no es una aplicación bonita, es **un libro contable bien
+ * llevado** — preciso, ordenado, verificable.
+ *
+ * De ahí salen los colores: papel, tinta ferrogálica azul-negra, grafito, y los
+ * sellos verde y rojo de conciliado y anulado.
+ *
+ * Tres reglas que gobiernan todo lo demás:
+ *   · Profundidad por bordes, no por sombras. Solo lo que de verdad flota —menú,
+ *     panel lateral, modal— proyecta sombra, y muy suave.
+ *   · El color significa algo. Un elemento en azul es accionable o está activo.
+ *     Nada se pinta para decorar.
+ *   · Los grises son fríos. Con un acento azul, un gris cálido se ve sucio.
  *
  * No hay modo oscuro. Es una decisión del cliente, no un pendiente.
+ *
+ * OJO CON LA SINTAXIS: en Tailwind 4 estos tokens se usan como `bg-acento`,
+ * `text-grafito`, `border-borde`. La forma `bg-[--color-acento]` es de Tailwind 3
+ * y **no genera nada** — silenciosamente, sin error.
  */
 
 @theme {
-  --color-fondo: #ffffff;
+  /* ── Papel: las superficies, de la más baja a la más alta ───────────────── */
+  --color-papel: #ffffff;
   --color-superficie: #ffffff;
-  --color-superficie-alt: #fafaf9;
-  --color-borde: #e7e5e4;
-  --color-texto: #1c1917;
-  --color-texto-suave: #78716c;
+  /* Encabezados de tabla, barra lateral, filas alternas. Frío, casi imperceptible. */
+  --color-superficie-alt: #f8fafc;
+  /* Campos de formulario: van hundidos, un punto más oscuros que su entorno. */
+  --color-campo: #f8fafc;
 
-  --color-dorado: #c4922a;
-  --color-dorado-suave: #fdf6e7;
+  /* ── Bordes: cuatro pesos, no uno ───────────────────────────────────────── */
+  --color-borde: #e2e8f0;
+  --color-borde-suave: #f1f5f9;
+  --color-borde-fuerte: #cbd5e1;
 
+  /* ── Tinta: cuatro niveles de texto, cada uno con su oficio ─────────────── */
+  --color-tinta: #0f172a;
+  --color-grafito: #475569;
+  --color-tenue: #94a3b8;
+  --color-apagado: #cbd5e1;
+
+  /* ── Acento: azul de estilógrafo, no azul de SaaS ───────────────────────── */
+  --color-acento: #1e40af;
+  --color-acento-fuerte: #1e3a8a;
+  --color-acento-borde: #bfdbfe;
+  --color-acento-suave: #eff6ff;
+
+  /* ── Sellos: el color como estado, nunca como adorno ────────────────────── */
   --color-exito: #15803d;
+  --color-exito-suave: #f0fdf4;
+  --color-exito-borde: #bbf7d0;
   --color-alerta: #b45309;
+  --color-alerta-suave: #fffbeb;
+  --color-alerta-borde: #fed7aa;
   --color-peligro: #b91c1c;
+  --color-peligro-suave: #fef2f2;
+  --color-peligro-borde: #fecaca;
 
+  /* ── Radios contenidos: más afilado se siente técnico ───────────────────── */
   --radius-sm: 4px;
   --radius-md: 6px;
+  --radius-lg: 8px;
+
+  /* ── Sombras: solo para lo que flota de verdad ──────────────────────────── */
+  --shadow-flotante: 0 4px 16px -4px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.06);
+  --shadow-panel: -8px 0 24px -8px rgb(15 23 42 / 0.08);
 
   --font-sans:
-    Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
-  --font-mono: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    var(--fuente-interfaz), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono: var(--fuente-mono), 'JetBrains Mono', 'SF Mono', Menlo, monospace;
 }
 
 @layer base {
@@ -45,53 +86,93 @@
   }
 
   body {
-    background-color: var(--color-fondo);
-    color: var(--color-texto);
+    background-color: var(--color-papel);
+    color: var(--color-tinta);
     font-family: var(--font-sans);
     font-size: 14px;
     line-height: 1.5;
     -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
   }
 
-  /* El foco tiene que verse siempre: la interfaz se opera con teclado (brief §9). */
+  /* El foco tiene que verse siempre: esto se opera con teclado (brief §9). */
   :focus-visible {
-    outline: 2px solid var(--color-dorado);
+    outline: 2px solid var(--color-acento);
     outline-offset: 2px;
     border-radius: var(--radius-sm);
   }
 
-  /* Cifras, hashes y montos: monoespaciada y con dígitos de ancho fijo, para que
-     las columnas de dinero queden alineadas. */
-  .cifra {
-    font-family: var(--font-mono);
-    font-variant-numeric: tabular-nums;
-    font-size: 13px;
-  }
-
   h1 {
-    font-size: 20px;
+    font-size: 19px;
     font-weight: 600;
-    letter-spacing: -0.01em;
+    letter-spacing: -0.015em;
+    color: var(--color-tinta);
   }
 
   h2 {
-    font-size: 16px;
+    font-size: 14px;
     font-weight: 600;
+    letter-spacing: -0.005em;
+    color: var(--color-tinta);
   }
 
   ::selection {
-    background-color: var(--color-dorado-suave);
+    background-color: var(--color-acento-suave);
+    color: var(--color-acento-fuerte);
+  }
+
+  /* Scrollbar discreta: en tablas densas, una barra gruesa roba ancho útil. */
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: var(--color-borde-fuerte);
+    border: 3px solid var(--color-papel);
+    border-radius: 8px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background-color: var(--color-tenue);
   }
 }
 
 @layer components {
-  /* Encabezado de columna de tabla: mayúsculas pequeñas y color suave, para que
-     los datos pesen más que sus etiquetas. */
+  /**
+   * Las cifras son ciudadanas de primera clase.
+   *
+   * Monoespaciada con dígitos de ancho fijo, para que una columna de montos se
+   * lea de un vistazo: el ojo compara posiciones, no dígitos. Sin esto, "1.111"
+   * y "9.999" ocupan anchos distintos y la columna deja de ser una columna.
+   */
+  .cifra {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'zero' 1;
+    font-size: 13px;
+    letter-spacing: -0.01em;
+  }
+
+  /** Hash de transacción: la huella de la operación. Siempre igual, en todas partes. */
+  .hash {
+    font-family: var(--font-mono);
+    font-size: 12px;
+    letter-spacing: -0.02em;
+    color: var(--color-grafito);
+  }
+
+  /* Encabezado de columna: la etiqueta pesa menos que el dato que nombra. */
   .encabezado-columna {
     font-size: 11px;
     font-weight: 500;
-    letter-spacing: 0.04em;
+    letter-spacing: 0.05em;
     text-transform: uppercase;
-    color: var(--color-texto-suave);
+    color: var(--color-tenue);
+  }
+
+  /* Etiqueta de campo o de sección. */
+  .etiqueta {
+    font-size: 12px;
+    font-weight: 500;
+    color: var(--color-grafito);
   }
 }

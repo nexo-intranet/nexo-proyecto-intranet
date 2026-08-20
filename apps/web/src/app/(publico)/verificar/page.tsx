@@ -82,7 +82,7 @@ export default function PaginaVerificar() {
   };
 
   if (paso === 'cargando') {
-    return <div className="h-32 animate-pulse rounded-[4px] bg-[--color-superficie-alt]" />;
+    return <div className="h-32 animate-pulse rounded-[4px] bg-superficie-alt" />;
   }
 
   // Los códigos de respaldo se muestran una única vez. Después solo existen como hash.
@@ -91,13 +91,13 @@ export default function PaginaVerificar() {
       <div className="space-y-4">
         <div className="space-y-1">
           <h1>Guarda estos códigos</h1>
-          <p className="text-[13px] text-[--color-texto-suave]">
+          <p className="text-[13px] text-grafito">
             Sirven para entrar si pierdes el teléfono. Cada uno funciona una sola vez y no volverás
             a verlos.
           </p>
         </div>
 
-        <ul className="grid grid-cols-2 gap-2 rounded-[4px] border border-[--color-borde] bg-[--color-superficie-alt] p-3">
+        <ul className="grid grid-cols-2 gap-2 rounded-[4px] border border-borde bg-superficie-alt p-3">
           {codigosRespaldo.map((respaldo) => (
             <li key={respaldo} className="cifra text-center">
               {respaldo}
@@ -135,7 +135,7 @@ export default function PaginaVerificar() {
     >
       <div className="space-y-1">
         <h1>{esRegistro ? 'Configura la verificación' : 'Verificación en dos pasos'}</h1>
-        <p className="text-[13px] text-[--color-texto-suave]">
+        <p className="text-[13px] text-grafito">
           {esRegistro
             ? 'Escanea el código con tu aplicación de autenticación y escribe el número que aparece.'
             : esRespaldo
@@ -150,14 +150,12 @@ export default function PaginaVerificar() {
           <img
             src={qr}
             alt="Código QR para la aplicación de autenticación"
-            className="mx-auto rounded-[4px] border border-[--color-borde]"
+            className="mx-auto rounded-[4px] border border-borde"
             width={200}
             height={200}
           />
           {secreto && (
-            <p className="cifra break-all text-[--color-texto-suave]">
-              ¿No puedes escanear? Escribe: {secreto}
-            </p>
+            <p className="cifra break-all text-grafito">¿No puedes escanear? Escribe: {secreto}</p>
           )}
         </div>
       )}

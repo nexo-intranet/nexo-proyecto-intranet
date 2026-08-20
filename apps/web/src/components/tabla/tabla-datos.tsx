@@ -79,10 +79,7 @@ export function TablaDatos<T>({
     return (
       <div className="space-y-px p-6">
         {Array.from({ length: 8 }, (_, indice) => (
-          <div
-            key={indice}
-            className="h-9 animate-pulse rounded-[3px] bg-[--color-superficie-alt]"
-          />
+          <div key={indice} className="h-9 animate-pulse rounded-[3px] bg-superficie-alt" />
         ))}
       </div>
     );
@@ -96,9 +93,9 @@ export function TablaDatos<T>({
     <div className="flex min-h-0 flex-1 flex-col">
       <div className="min-h-0 flex-1 overflow-auto">
         <table className="w-full border-collapse">
-          <thead className="sticky top-0 z-10 bg-[--color-superficie-alt]">
+          <thead className="sticky top-0 z-10 bg-superficie-alt">
             {tabla.getHeaderGroups().map((grupo) => (
-              <tr key={grupo.id} className="border-b border-[--color-borde]">
+              <tr key={grupo.id} className="border-b border-borde">
                 {grupo.headers.map((encabezado) => {
                   const campo = encabezado.column.id;
                   const ordenable = encabezado.column.columnDef.enableSorting !== false;
@@ -117,7 +114,7 @@ export function TablaDatos<T>({
                         <button
                           type="button"
                           onClick={() => ordenarPor(campo)}
-                          className="inline-flex items-center gap-1 hover:text-[--color-texto]"
+                          className="inline-flex items-center gap-1 hover:text-tinta"
                         >
                           {flexRender(encabezado.column.columnDef.header, encabezado.getContext())}
                           {activo &&
@@ -158,11 +155,9 @@ export function TablaDatos<T>({
                     }
                   }}
                   className={cn(
-                    'border-b border-[--color-borde]',
+                    'border-b border-borde',
                     onSeleccionar && 'cursor-pointer',
-                    seleccionada
-                      ? 'bg-[--color-dorado-suave]'
-                      : 'hover:bg-[--color-superficie-alt]',
+                    seleccionada ? 'bg-acento-suave' : 'hover:bg-superficie-alt',
                   )}
                 >
                   {fila.getVisibleCells().map((celda) => (
@@ -177,8 +172,8 @@ export function TablaDatos<T>({
         </table>
       </div>
 
-      <div className="flex shrink-0 items-center justify-between border-t border-[--color-borde] px-4 py-2">
-        <p className="text-[12px] text-[--color-texto-suave]">
+      <div className="flex shrink-0 items-center justify-between border-t border-borde px-4 py-2">
+        <p className="text-[12px] text-grafito">
           <span className="cifra">{desde}</span>–<span className="cifra">{hasta}</span> de{' '}
           <span className="cifra">{total}</span>
         </p>
@@ -193,7 +188,7 @@ export function TablaDatos<T>({
           >
             <ChevronLeft aria-hidden />
           </Boton>
-          <span className="cifra px-2 text-[12px] text-[--color-texto-suave]">
+          <span className="cifra px-2 text-[12px] text-grafito">
             {estado.pagina} / {ultimaPagina}
           </span>
           <Boton

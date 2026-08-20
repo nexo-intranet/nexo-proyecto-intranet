@@ -17,7 +17,7 @@ export default function LayoutAdministracion({ children }: { children: React.Rea
     <div className="flex h-full flex-col">
       <nav
         aria-label="Secciones de administración"
-        className="flex shrink-0 items-center gap-1 border-b border-[--color-borde] px-4"
+        className="flex shrink-0 items-center gap-1 border-b border-borde px-4"
       >
         {SECCIONES.map((seccion) => {
           const activa = ruta.startsWith(seccion.href);
@@ -29,8 +29,8 @@ export default function LayoutAdministracion({ children }: { children: React.Rea
               className={cn(
                 '-mb-px border-b-2 px-3 py-2.5 text-[13px] transition-colors',
                 activa
-                  ? 'border-[--color-dorado] font-medium text-[--color-texto]'
-                  : 'border-transparent text-[--color-texto-suave] hover:text-[--color-texto]',
+                  ? 'border-acento font-medium text-tinta'
+                  : 'border-transparent text-grafito hover:text-tinta',
               )}
             >
               {seccion.etiqueta}

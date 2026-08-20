@@ -53,7 +53,7 @@ const columnas: ColumnDef<Empresa, unknown>[] = [
     header: 'Tipo',
     enableSorting: false,
     cell: ({ row }) => (
-      <span className="text-[--color-texto-suave]">
+      <span className="text-grafito">
         {ETIQUETA_TIPO_CONTRIBUYENTE[row.original.tipoContribuyente]}
       </span>
     ),
@@ -183,7 +183,7 @@ function DetalleEmpresa({ empresa }: { empresa: Empresa }) {
     <dl className="space-y-3">
       {filas.map(([etiqueta, valor]) => (
         <div key={etiqueta} className="grid grid-cols-[130px_1fr] gap-3">
-          <dt className="text-[13px] text-[--color-texto-suave]">{etiqueta}</dt>
+          <dt className="text-[13px] text-grafito">{etiqueta}</dt>
           <dd className="text-[13px]">{valor}</dd>
         </div>
       ))}
@@ -311,7 +311,7 @@ function FormularioEmpresa({
         >
           <select
             id="tipoContribuyente"
-            className="h-9 w-full rounded-[4px] border border-[--color-borde] bg-white px-3 text-[14px] focus:border-[--color-dorado] focus:outline-none focus:ring-1 focus:ring-[--color-dorado]"
+            className="h-9 w-full rounded-[4px] border border-borde bg-white px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
             {...register('tipoContribuyente')}
           >
             {TIPOS_CONTRIBUYENTE.map((tipo) => (

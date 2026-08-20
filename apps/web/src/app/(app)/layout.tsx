@@ -43,12 +43,12 @@ export default function LayoutAplicacion({ children }: { children: React.ReactNo
   if (isLoading) {
     return (
       <div className="flex h-screen">
-        <div className="w-[200px] border-r border-[--color-borde] bg-[--color-superficie-alt]" />
+        <div className="w-[200px] border-r border-borde bg-superficie-alt" />
         <div className="flex-1">
-          <div className="h-12 border-b border-[--color-borde]" />
+          <div className="h-12 border-b border-borde" />
           <div className="space-y-3 p-6">
-            <div className="h-6 w-48 animate-pulse rounded-[4px] bg-[--color-superficie-alt]" />
-            <div className="h-40 animate-pulse rounded-[6px] bg-[--color-superficie-alt]" />
+            <div className="h-6 w-48 animate-pulse rounded-[4px] bg-superficie-alt" />
+            <div className="h-40 animate-pulse rounded-[6px] bg-superficie-alt" />
           </div>
         </div>
       </div>

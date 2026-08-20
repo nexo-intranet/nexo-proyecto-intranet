@@ -36,7 +36,7 @@ function ContenidoPerfil() {
         {debeCambiar && (
           <div
             role="alert"
-            className="rounded-[4px] border border-[--color-dorado] bg-[--color-dorado-suave] px-3 py-2.5 text-[13px]"
+            className="rounded-[4px] border border-acento bg-acento-suave px-3 py-2.5 text-[13px]"
           >
             Tu contraseña es temporal. Cámbiala para seguir usando el sistema.
           </div>
@@ -50,7 +50,7 @@ function ContenidoPerfil() {
             ) : (
               <Distintivo tono="alerta">Sin registrar</Distintivo>
             )}
-            <p className="text-[13px] text-[--color-texto-suave]">
+            <p className="text-[13px] text-grafito">
               {sesion?.usuario.totpActivado
                 ? 'Si cambias de teléfono, pídele a un administrador que la reinicie.'
                 : 'Se registra la próxima vez que ingreses.'}
@@ -60,13 +60,13 @@ function ContenidoPerfil() {
 
         <FormularioPassword />
 
-        <section className="space-y-2 border-t border-[--color-borde] pt-6">
+        <section className="space-y-2 border-t border-borde pt-6">
           <h2>Empresas a las que tienes acceso</h2>
           <ul className="space-y-1">
             {(sesion?.empresas ?? []).map((empresa) => (
               <li key={empresa.id} className="flex items-center justify-between text-[13px]">
                 <span>{empresa.nombre}</span>
-                <span className="cifra text-[--color-texto-suave]">
+                <span className="cifra text-grafito">
                   {empresa.nit}-{empresa.digitoVerificacion}
                 </span>
               </li>
@@ -103,10 +103,10 @@ function FormularioPassword() {
   });
 
   return (
-    <section className="space-y-3 border-t border-[--color-borde] pt-6">
+    <section className="space-y-3 border-t border-borde pt-6">
       <div className="space-y-0.5">
         <h2>Cambiar contraseña</h2>
-        <p className="text-[13px] text-[--color-texto-suave]">
+        <p className="text-[13px] text-grafito">
           Al cambiarla se cierran todas tus sesiones abiertas, incluida esta.
         </p>
       </div>

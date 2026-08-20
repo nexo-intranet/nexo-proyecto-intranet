@@ -45,7 +45,7 @@ export default function PaginaIngresar() {
     <form onSubmit={enviar} className="space-y-5" noValidate>
       <div className="space-y-1">
         <h1>Ingresar</h1>
-        <p className="text-[13px] text-[--color-texto-suave]">
+        <p className="text-[13px] text-grafito">
           Usa el correo con el que te registró un administrador.
         </p>
       </div>
@@ -66,7 +66,7 @@ export default function PaginaIngresar() {
       {errorGeneral && (
         <p
           role="alert"
-          className="rounded-[4px] border border-[--color-peligro] bg-[#fef2f2] px-3 py-2 text-[13px] text-[--color-peligro]"
+          className="rounded-[4px] border border-peligro bg-[#fef2f2] px-3 py-2 text-[13px] text-peligro"
         >
           {errorGeneral}
         </p>
@@ -82,7 +82,7 @@ export default function PaginaIngresar() {
         {isSubmitting ? 'Verificando…' : 'Continuar'}
       </Boton>
 
-      <p className="text-[12px] text-[--color-texto-suave]">
+      <p className="text-[12px] text-grafito">
         Después de la contraseña se pide un código de verificación. Si perdiste el acceso, pídele a
         un administrador que reinicie tu verificación en dos pasos.
       </p>

@@ -40,7 +40,7 @@ const columnas: ColumnDef<Usuario, unknown>[] = [
       row.original.rol === 'ADMINISTRADOR' ? (
         <Distintivo>Administrador</Distintivo>
       ) : (
-        <span className="text-[--color-texto-suave]">Equipo interno</span>
+        <span className="text-grafito">Equipo interno</span>
       ),
   },
   {
@@ -213,7 +213,7 @@ function DetalleUsuario({
       <section className="space-y-2">
         <h2>Empresas</h2>
         {usuario.empresas.length === 0 ? (
-          <p className="text-[13px] text-[--color-texto-suave]">Sin empresas asignadas.</p>
+          <p className="text-[13px] text-grafito">Sin empresas asignadas.</p>
         ) : (
           <ul className="space-y-1">
             {usuario.empresas.map((empresa) => (
@@ -228,7 +228,7 @@ function DetalleUsuario({
       <section className="space-y-2">
         <h2>Permisos por módulo</h2>
         {usuario.rol === 'ADMINISTRADOR' ? (
-          <p className="text-[13px] text-[--color-texto-suave]">
+          <p className="text-[13px] text-grafito">
             Es administrador: tiene acceso a todos los módulos y a todas las empresas.
           </p>
         ) : (
@@ -244,19 +244,19 @@ function DetalleUsuario({
               );
             })}
             {!usuario.permisos.some((permiso) => permiso.puedeVer) && (
-              <li className="text-[13px] text-[--color-texto-suave]">Sin módulos asignados.</li>
+              <li className="text-[13px] text-grafito">Sin módulos asignados.</li>
             )}
           </ul>
         )}
       </section>
 
       {puedeGestionar && !esUnoMismo && (
-        <section className="space-y-2 border-t border-[--color-borde] pt-4">
+        <section className="space-y-2 border-t border-borde pt-4">
           <h2>Acciones</h2>
 
           {temporal ? (
-            <div className="rounded-[4px] border border-[--color-dorado] bg-[--color-dorado-suave] p-3">
-              <p className="text-[12px] text-[--color-texto-suave]">
+            <div className="rounded-[4px] border border-acento bg-acento-suave p-3">
+              <p className="text-[12px] text-grafito">
                 Contraseña temporal. Se muestra una sola vez: cópiala y entrégasela al usuario.
               </p>
               <p className="cifra mt-1 text-[15px]">{temporal}</p>
@@ -285,7 +285,7 @@ function DetalleUsuario({
       )}
 
       {esUnoMismo && (
-        <p className="border-t border-[--color-borde] pt-4 text-[12px] text-[--color-texto-suave]">
+        <p className="border-t border-borde pt-4 text-[12px] text-grafito">
           Esta es tu propia cuenta. Los permisos y las empresas propias los cambia otro
           administrador.
         </p>
@@ -357,13 +357,13 @@ function FormularioUsuario({
         }
       >
         <div className="space-y-3">
-          <div className="rounded-[4px] border border-[--color-dorado] bg-[--color-dorado-suave] p-3">
-            <p className="text-[12px] text-[--color-texto-suave]">
+          <div className="rounded-[4px] border border-acento bg-acento-suave p-3">
+            <p className="text-[12px] text-grafito">
               Contraseña temporal. No se guarda en ningún lado y no vuelve a mostrarse.
             </p>
             <p className="cifra mt-1 text-[16px]">{creado.passwordTemporal}</p>
           </div>
-          <p className="text-[13px] text-[--color-texto-suave]">
+          <p className="text-[13px] text-grafito">
             Entrégasela por un medio seguro. Al entrar, el sistema le pedirá cambiarla y registrar
             la verificación en dos pasos.
           </p>
@@ -411,7 +411,7 @@ function FormularioUsuario({
         <Campo etiqueta="Rol" htmlFor="rol" error={errors.rol?.message}>
           <select
             id="rol"
-            className="h-9 w-full rounded-[4px] border border-[--color-borde] bg-white px-3 text-[14px] focus:border-[--color-dorado] focus:outline-none focus:ring-1 focus:ring-[--color-dorado]"
+            className="h-9 w-full rounded-[4px] border border-borde bg-white px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
             {...register('rol')}
           >
             <option value="EQUIPO_INTERNO">Equipo interno</option>
@@ -425,12 +425,12 @@ function FormularioUsuario({
           render={({ field }) => (
             <div className="space-y-1.5">
               <Etiqueta>Empresas</Etiqueta>
-              <div className="space-y-1 rounded-[4px] border border-[--color-borde] p-2">
+              <div className="space-y-1 rounded-[4px] border border-borde p-2">
                 {(empresas ?? []).map((empresa) => (
                   <label key={empresa.id} className="flex items-center gap-2 text-[13px]">
                     <input
                       type="checkbox"
-                      className="accent-[--color-dorado]"
+                      className="accent-acento"
                       checked={field.value.includes(empresa.id)}
                       onChange={(evento) =>
                         field.onChange(
@@ -445,7 +445,7 @@ function FormularioUsuario({
                 ))}
               </div>
               {errors.empresaIds && (
-                <p role="alert" className="text-[12px] text-[--color-peligro]">
+                <p role="alert" className="text-[12px] text-peligro">
                   {errors.empresaIds.message}
                 </p>
               )}
@@ -459,7 +459,7 @@ function FormularioUsuario({
           render={({ field }) => (
             <div className="space-y-1.5">
               <Etiqueta>Permisos por módulo</Etiqueta>
-              <p className="text-[12px] text-[--color-texto-suave]">
+              <p className="text-[12px] text-grafito">
                 Los módulos sin marcar no aparecen en su barra lateral.
               </p>
               <table className="w-full">
@@ -490,13 +490,13 @@ function FormularioUsuario({
                     };
 
                     return (
-                      <tr key={modulo} className="border-t border-[--color-borde]">
+                      <tr key={modulo} className="border-t border-borde">
                         <td className="py-1.5 text-[13px]">{ETIQUETA_MODULO[modulo]}</td>
                         <td className="text-center">
                           <input
                             type="checkbox"
                             aria-label={`Ver ${ETIQUETA_MODULO[modulo]}`}
-                            className="accent-[--color-dorado]"
+                            className="accent-acento"
                             checked={actual?.puedeVer ?? false}
                             onChange={(evento) => cambiar('puedeVer', evento.target.checked)}
                           />
@@ -505,7 +505,7 @@ function FormularioUsuario({
                           <input
                             type="checkbox"
                             aria-label={`Editar ${ETIQUETA_MODULO[modulo]}`}
-                            className="accent-[--color-dorado]"
+                            className="accent-acento"
                             checked={actual?.puedeEditar ?? false}
                             onChange={(evento) => cambiar('puedeEditar', evento.target.checked)}
                           />

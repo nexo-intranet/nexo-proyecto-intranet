@@ -52,9 +52,7 @@ const columnas: ColumnDef<RegistroAuditoria, unknown>[] = [
     id: 'ip',
     header: 'Origen',
     enableSorting: false,
-    cell: ({ row }) => (
-      <span className="cifra text-[--color-texto-suave]">{row.original.ip ?? '—'}</span>
-    ),
+    cell: ({ row }) => <span className="cifra text-grafito">{row.original.ip ?? '—'}</span>,
   },
 ];
 
@@ -105,10 +103,10 @@ export default function PaginaAuditoria() {
         descripcion="Historial de la empresa activa. Es de solo lectura: no se puede editar ni borrar."
       />
 
-      <div className="flex items-center gap-2 border-b border-[--color-borde] px-6 py-2.5">
+      <div className="flex items-center gap-2 border-b border-borde px-6 py-2.5">
         <select
           aria-label="Filtrar por acción"
-          className="h-8 rounded-[4px] border border-[--color-borde] bg-white px-2 text-[13px]"
+          className="h-8 rounded-[4px] border border-borde bg-white px-2 text-[13px]"
           value={accion}
           onChange={(evento) => {
             setAccion(evento.target.value as AccionAudit | '');
@@ -166,15 +164,15 @@ export default function PaginaAuditoria() {
           <div className="space-y-4">
             <dl className="space-y-2">
               <div className="grid grid-cols-[110px_1fr] gap-3">
-                <dt className="text-[13px] text-[--color-texto-suave]">Usuario</dt>
+                <dt className="text-[13px] text-grafito">Usuario</dt>
                 <dd className="text-[13px]">{seleccionado.usuario?.nombre ?? '—'}</dd>
               </div>
               <div className="grid grid-cols-[110px_1fr] gap-3">
-                <dt className="text-[13px] text-[--color-texto-suave]">Registro</dt>
+                <dt className="text-[13px] text-grafito">Registro</dt>
                 <dd className="cifra text-[13px]">{seleccionado.entidadId ?? '—'}</dd>
               </div>
               <div className="grid grid-cols-[110px_1fr] gap-3">
-                <dt className="text-[13px] text-[--color-texto-suave]">Origen</dt>
+                <dt className="text-[13px] text-grafito">Origen</dt>
                 <dd className="cifra text-[13px]">{seleccionado.ip ?? '—'}</dd>
               </div>
             </dl>
@@ -209,9 +207,9 @@ function ComparacionValores({
     <section className="space-y-1.5">
       <h2>{titulo}</h2>
       {valor === null ? (
-        <p className="text-[13px] text-[--color-texto-suave]">{vacio}</p>
+        <p className="text-[13px] text-grafito">{vacio}</p>
       ) : (
-        <pre className="cifra overflow-auto rounded-[4px] border border-[--color-borde] bg-[--color-superficie-alt] p-2.5 text-[12px]">
+        <pre className="cifra overflow-auto rounded-[4px] border border-borde bg-superficie-alt p-2.5 text-[12px]">
           {JSON.stringify(valor, null, 2)}
         </pre>
       )}

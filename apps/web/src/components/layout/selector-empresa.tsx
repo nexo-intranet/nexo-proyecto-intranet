@@ -28,26 +28,26 @@ export function SelectorEmpresa({ sesion }: { sesion: SesionActual | undefined }
   const actual = empresas.find((empresa) => empresa.id === empresaId);
 
   if (empresas.length === 0) {
-    return <span className="text-[13px] text-[--color-texto-suave]">Sin empresas asignadas</span>;
+    return <span className="text-[13px] text-grafito">Sin empresas asignadas</span>;
   }
 
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
-        className="flex h-8 items-center gap-2 rounded-[4px] border border-[--color-borde] bg-white px-2.5 text-[13px] hover:bg-[--color-superficie-alt]"
+        className="flex h-8 items-center gap-2 rounded-[4px] border border-borde bg-white px-2.5 text-[13px] hover:bg-superficie-alt"
         aria-label="Cambiar de empresa"
       >
         <span className="max-w-[220px] truncate font-medium">
           {actual?.nombre ?? 'Selecciona una empresa'}
         </span>
-        <ChevronsUpDown className="size-3.5 text-[--color-texto-suave]" aria-hidden />
+        <ChevronsUpDown className="size-3.5 text-grafito" aria-hidden />
       </DropdownMenu.Trigger>
 
       <DropdownMenu.Portal>
         <DropdownMenu.Content
           align="start"
           sideOffset={4}
-          className="z-50 min-w-[260px] rounded-[6px] border border-[--color-borde] bg-white p-1 shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
+          className="z-50 min-w-[260px] rounded-[6px] border border-borde bg-white p-1 shadow-[0_4px_12px_rgba(0,0,0,0.06)]"
         >
           {empresas.map((empresa) => {
             const seleccionada = empresa.id === empresaId;
@@ -58,17 +58,17 @@ export function SelectorEmpresa({ sesion }: { sesion: SesionActual | undefined }
                 className={cn(
                   'flex cursor-pointer items-center justify-between gap-3 rounded-[4px] px-2.5 py-1.5 text-[13px] outline-none',
                   seleccionada
-                    ? 'bg-[--color-dorado-suave]'
-                    : 'hover:bg-[--color-superficie-alt] focus:bg-[--color-superficie-alt]',
+                    ? 'bg-acento-suave'
+                    : 'hover:bg-superficie-alt focus:bg-superficie-alt',
                 )}
               >
                 <span className="flex flex-col">
                   <span className="truncate">{empresa.nombre}</span>
-                  <span className="cifra text-[11px] text-[--color-texto-suave]">
+                  <span className="cifra text-[11px] text-grafito">
                     {empresa.nit}-{empresa.digitoVerificacion}
                   </span>
                 </span>
-                {seleccionada && <Check className="size-3.5 text-[--color-dorado]" aria-hidden />}
+                {seleccionada && <Check className="size-3.5 text-acento" aria-hidden />}
               </DropdownMenu.Item>
             );
           })}
