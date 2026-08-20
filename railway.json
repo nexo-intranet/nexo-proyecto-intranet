@@ -1,0 +1,13 @@
+{
+  "$schema": "https://railway.com/railway.schema.json",
+  "build": {
+    "buildCommand": "pnpm install --frozen-lockfile && pnpm turbo run build --filter=@nexo/api"
+  },
+  "deploy": {
+    "startCommand": "node apps/api/dist/main.js",
+    "healthcheckPath": "/api/v1/salud",
+    "healthcheckTimeout": 120,
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 3
+  }
+}
