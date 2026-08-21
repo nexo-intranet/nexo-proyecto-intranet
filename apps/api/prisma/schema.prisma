@@ -522,6 +522,10 @@ model DispersionDestino {
   /// Copia del nombre y la cuenta al momento de dispersar. Si mañana alguien
   /// corrige la cuenta en el catálogo, el histórico tiene que seguir diciendo a
   /// dónde se giró realmente.
+  ///
+  /// cuentaSnapshot guarda la cuenta cifrada, igual que en el catálogo: es la
+  /// prueba de a dónde salió la plata, y por eso se conserva completa. La API solo
+  /// devuelve sus últimos cuatro dígitos.
   nombreSnapshot String
   cuentaSnapshot String?
 

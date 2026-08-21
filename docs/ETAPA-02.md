@@ -386,6 +386,12 @@ Todas exigen empresa activa y permiso del módulo `OPERACIONES`.
 | **`GET`** | **`/operaciones/buscar?hash=`** | ver — **la función central**                            |
 | `GET`     | `/operaciones/resumen`          | ver — totales del período para el tablero               |
 
+El resumen devuelve la ganancia sumada en pesos —que es el único valor ya
+convertido, y por eso el único sumable— más el volumen **separado por moneda**.
+Sumar dólares con pesos en un solo total daría un número que no significa nada.
+Las anuladas quedan fuera de las sumas pero sí aparecen en el conteo por estado:
+en el tablero hay que poder ver que existen sin que inflen el resultado.
+
 `GET /operaciones/buscar` acepta el hash completo o un prefijo de al menos 8
 caracteres, y responde con la operación, su cliente y el estado de su dispersión en
 una sola llamada: quien pega un hash quiere ver todo, no navegar tres pantallas.
@@ -396,16 +402,33 @@ Es lo que la paleta de comandos (⌘K) llama al detectar algo con forma de hash.
 | Método  | Ruta                                             | Permiso                                              |
 | ------- | ------------------------------------------------ | ---------------------------------------------------- |
 | `GET`   | `/dispersiones`                                  | ver — filtro por estado, para la vista de pendientes |
+| `GET`   | `/operaciones/:id/dispersion`                    | ver — la dispersión de esa operación                 |
 | `POST`  | `/operaciones/:id/dispersion`                    | editar — arma el reparto, con regla o a mano         |
+| `POST`  | `/operaciones/:id/dispersion/previsualizar`      | ver — calcula el reparto sin guardarlo               |
 | `GET`   | `/dispersiones/:id`                              | ver                                                  |
-| `PATCH` | `/dispersiones/:id`                              | editar — solo mientras esté `PENDIENTE`              |
+| `PATCH` | `/dispersiones/:id`                              | editar — solo mientras ningún giro esté marcado      |
 | `POST`  | `/dispersiones/:id/destinos/:destinoId/ejecutar` | editar — con referencia de pago                      |
 | `POST`  | `/dispersiones/:id/destinos/:destinoId/revertir` | editar — con motivo                                  |
-| `POST`  | `/dispersiones/:id/previsualizar`                | ver — calcula el reparto sin guardarlo               |
 
 `previsualizar` existe para que el formulario muestre el reparto y el cuadre **antes
 de guardar**, con el mismo cálculo del servidor. Que el navegador haga su propia
 cuenta es justo como aparecen las diferencias de un peso.
+
+Cuelga de la operación y no de la dispersión —como decía el borrador de esta
+etapa— porque se usa **antes** de que la dispersión exista, que es justo el momento
+en que alguien quiere ver los números sin comprometerse todavía.
+
+`ejecutar` y `revertir` van separados a propósito: un giro que salió necesita su
+referencia de pago, y uno devuelto necesita que alguien explique por qué. Un solo
+endpoint con un campo `estado` obligaría a inventar una referencia de pago para una
+devolución. El id de la dispersión viaja en la ruta y se exige que coincida con el
+del giro: adivinar un id de destino no alcanza para tocar el reparto de otra
+operación.
+
+`PATCH /dispersiones/:id` rehace el reparto completo, y solo mientras no haya salido
+un peso. Después de un giro ejecutado, cambiar el reparto dejaría el histórico
+diciendo una cosa y la plata habiendo ido a otra: ahí lo que corresponde es
+devolver el giro primero.
 
 ### 4.3 Destinatarios y reglas
 
@@ -414,15 +437,27 @@ cuenta es justo como aparecen las diferencias de un peso.
 | `GET` / `POST`             | `/destinatarios`         | ver / editar |
 | `GET` / `PATCH` / `DELETE` | `/destinatarios/:id`     | ver / editar |
 | `GET` / `POST`             | `/reglas-dispersion`     | ver / editar |
-| `GET` / `PATCH` / `DELETE` | `/reglas-dispersion/:id` | ver / editar |
+| `GET` / `PUT` / `DELETE`   | `/reglas-dispersion/:id` | ver / editar |
+
+La regla se guarda con `PUT` y no con `PATCH`: cabecera y destinos van juntos, en
+una sola transacción, y editarla **reemplaza** sus destinos en vez de mezclarlos.
+Media regla de porcentajes no reparte mal a medias — reparte mal. Las dispersiones
+ya hechas no se ven afectadas: cada una guardó su propia copia de a quién y cuánto.
+
+Ni los destinatarios ni los clientes devuelven nunca el documento o la cuenta
+completos: de la API solo salen los últimos cuatro dígitos (`docs/SEGURIDAD.md` §5).
 
 ### 4.4 Clientes (mínimo)
 
-| Método          | Ruta                          | Permiso                 |
-| --------------- | ----------------------------- | ----------------------- |
-| `GET` / `POST`  | `/clientes`                   | módulo `CLIENTES`       |
-| `GET` / `PATCH` | `/clientes/:id`               | módulo `CLIENTES`       |
-| `GET`           | `/clientes/buscar?documento=` | por HMAC, sin descifrar |
+| Método                     | Ruta                          | Permiso                 |
+| -------------------------- | ----------------------------- | ----------------------- |
+| `GET` / `POST`             | `/clientes`                   | módulo `CLIENTES`       |
+| `GET` / `PATCH` / `DELETE` | `/clientes/:id`               | módulo `CLIENTES`       |
+| `GET`                      | `/clientes/buscar?documento=` | por HMAC, sin descifrar |
+
+`DELETE` es baja lógica y se niega si el cliente tiene operaciones vigentes: un
+cliente borrado dejaría operaciones colgando de nadie. El documento no se edita —
+cambiarlo convertiría el registro en otra persona conservando su historial.
 
 ---
 

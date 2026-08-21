@@ -55,3 +55,19 @@ export const csrfInvalido = () =>
     'La solicitud no pudo verificarse. Recarga la página e inténtalo de nuevo.',
     HttpStatus.FORBIDDEN,
   );
+
+/**
+ * La petición es válida pero choca con el estado actual: un documento repetido,
+ * una operación ya anulada, un cliente con historial. No es culpa del formato, así
+ * que no es 400; es el estado del sistema el que la rechaza.
+ */
+export const conflicto = (mensaje: string) =>
+  new ErrorNegocio('CONFLICTO', mensaje, HttpStatus.CONFLICT);
+
+/** Acción no permitida sobre un documento anulado (brief §4.3). */
+export const documentoAnulado = (que: string) =>
+  new ErrorNegocio(
+    'DOCUMENTO_ANULADO',
+    `${que} está anulada y no admite cambios.`,
+    HttpStatus.CONFLICT,
+  );

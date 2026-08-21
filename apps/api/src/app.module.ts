@@ -14,7 +14,10 @@ import { ContextoMiddleware } from './core/context/contexto.middleware';
 import { CoreModule } from './core/core.module';
 import { AuditoriaModule } from './modules/auditoria/auditoria.module';
 import { AuthModule } from './modules/auth/auth.module';
+import { ClientesModule } from './modules/clientes/clientes.module';
 import { EmpresasModule } from './modules/empresas/empresas.module';
+import { DispersionesModule } from './modules/dispersiones/dispersiones.module';
+import { OperacionesModule } from './modules/operaciones/operaciones.module';
 import { SaludModule } from './modules/salud/salud.module';
 import { UsuariosModule } from './modules/usuarios/usuarios.module';
 
@@ -47,6 +50,9 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
     EmpresasModule,
     UsuariosModule,
     AuditoriaModule,
+    ClientesModule,
+    OperacionesModule,
+    DispersionesModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

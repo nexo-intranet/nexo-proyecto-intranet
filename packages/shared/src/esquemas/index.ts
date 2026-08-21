@@ -3,3 +3,6 @@ export * from './auth.js';
 export * from './empresa.js';
 export * from './usuario.js';
 export * from './auditoria.js';
+export * from './cliente.js';
+export * from './operacion.js';
+export * from './dispersion.js';
