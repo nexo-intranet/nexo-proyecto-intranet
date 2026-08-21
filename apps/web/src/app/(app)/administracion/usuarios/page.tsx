@@ -411,7 +411,7 @@ function FormularioUsuario({
         <Campo etiqueta="Rol" htmlFor="rol" error={errors.rol?.message}>
           <select
             id="rol"
-            className="h-9 w-full rounded-[4px] border border-borde bg-white px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
+            className="h-9 w-full rounded-[4px] border border-borde bg-superficie px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
             {...register('rol')}
           >
             <option value="EQUIPO_INTERNO">Equipo interno</option>

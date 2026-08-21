@@ -37,3 +37,8 @@ export function puedeEditar(sesion: SesionActual | undefined, modulo: ModuloSist
   if (!sesion) return false;
   return tienePermiso(sesion.permisos, modulo, 'editar', sesion.usuario.rol === 'ADMINISTRADOR');
 }
+
+export function puedeVer(sesion: SesionActual | undefined, modulo: ModuloSistema): boolean {
+  if (!sesion) return false;
+  return tienePermiso(sesion.permisos, modulo, 'ver', sesion.usuario.rol === 'ADMINISTRADOR');
+}

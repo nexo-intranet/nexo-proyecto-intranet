@@ -155,3 +155,44 @@ export function Cuadre({
     </div>
   );
 }
+
+/**
+ * Encabezado de sección de la portada.
+ *
+ * La barra de color al lado del título es el gesto que más se repite en la
+ * referencia, y hace un trabajo real: separa secciones sin necesidad de una línea
+ * divisoria a todo lo ancho, y el color dice de qué tipo es la sección antes de
+ * que alguien lea el título. Coral significa que algo está esperando.
+ */
+export function EncabezadoSeccion({
+  titulo,
+  descripcion,
+  tono = 'acento',
+  accion,
+}: {
+  titulo: string;
+  descripcion?: string;
+  tono?: 'acento' | 'peligro' | 'decorativo';
+  accion?: ReactNode;
+}) {
+  const barra = {
+    acento: 'bg-acento',
+    peligro: 'bg-peligro',
+    decorativo: 'bg-decorativo',
+  }[tono];
+
+  return (
+    <div className="mb-5 flex items-end justify-between gap-4">
+      <div className="flex min-w-0 items-stretch gap-3">
+        <span className={cn('w-1 shrink-0 rounded-pill', barra)} aria-hidden />
+        <div className="min-w-0">
+          <h2 className="titulo-seccion">{titulo}</h2>
+          {descripcion && (
+            <p className="mt-1 text-[13px] leading-snug text-grafito">{descripcion}</p>
+          )}
+        </div>
+      </div>
+      {accion && <div className="shrink-0 pb-1">{accion}</div>}
+    </div>
+  );
+}

@@ -106,7 +106,7 @@ export default function PaginaAuditoria() {
       <div className="flex items-center gap-2 border-b border-borde px-6 py-2.5">
         <select
           aria-label="Filtrar por acción"
-          className="h-8 rounded-[4px] border border-borde bg-white px-2 text-[13px]"
+          className="h-8 rounded-[4px] border border-borde bg-superficie px-2 text-[13px]"
           value={accion}
           onChange={(evento) => {
             setAccion(evento.target.value as AccionAudit | '');

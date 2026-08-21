@@ -311,7 +311,7 @@ function FormularioEmpresa({
         >
           <select
             id="tipoContribuyente"
-            className="h-9 w-full rounded-[4px] border border-borde bg-white px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
+            className="h-9 w-full rounded-[4px] border border-borde bg-superficie px-3 text-[14px] focus:border-acento focus:outline-none focus:ring-1 focus:ring-acento"
             {...register('tipoContribuyente')}
           >
             {TIPOS_CONTRIBUYENTE.map((tipo) => (

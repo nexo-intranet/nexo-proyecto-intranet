@@ -1,108 +1,184 @@
 'use client';
 
-import { ETIQUETA_MODULO, RUTA_MODULO, type ModuloSistema } from '@nexo/shared';
-import { ArrowRight, Building2, FileText, Receipt, ShieldCheck, Users, Wallet } from 'lucide-react';
+import { ETIQUETA_ESTADO_OPERACION, formatear, type ResumenOperaciones } from '@nexo/shared';
+import { useQuery } from '@tanstack/react-query';
+import { ArrowRight, CheckCircle2, Split } from 'lucide-react';
 import Link from 'next/link';
-import { EncabezadoPagina } from '@/components/patrones';
+import { HeroePortada } from '@/components/portada/heroe';
+import { EncabezadoSeccion, Esqueleto } from '@/components/patrones';
+import { peticion } from '@/lib/api/cliente';
 import { useEmpresa } from '@/lib/empresa';
-import { modulosVisibles, useSesion } from '@/lib/sesion';
+import { modulosVisibles, puedeVer, useSesion } from '@/lib/sesion';
 
-const ICONO: Partial<Record<ModuloSistema, typeof Wallet>> = {
-  OPERACIONES: Wallet,
-  EGRESOS: Receipt,
-  EMPLEADOS: Users,
-  CONTABILIDAD: FileText,
-  CUMPLIMIENTO: ShieldCheck,
-  CLIENTES: Building2,
-};
-
-/** Qué resuelve cada módulo, en una línea. Un nombre suelto no orienta a nadie. */
-const QUE_HACE: Partial<Record<ModuloSistema, string>> = {
-  OPERACIONES: 'Registro por hash, ganancia y dispersión',
-  EGRESOS: 'Pagos por intangibles y órdenes de pago',
-  EMPLEADOS: 'Nómina documental y cartas laborales',
-  CONTABILIDAD: 'Facturación, gastos y calendario tributario',
-  CUMPLIMIENTO: 'Verificaciones, políticas y reportes UIAF',
-  CLIENTES: 'Portafolio e historial de operaciones',
-};
-
+/**
+ * La portada.
+ *
+ * Responde tres preguntas en el orden en que se hacen al entrar en la mañana:
+ * sobre qué empresa estoy trabajando, qué está esperando por mí, y a dónde entro.
+ *
+ * Lo que se muestra aquí sale de datos reales o no se muestra. Un tablero con
+ * tarjetas de adorno que siempre marcan cero enseña a ignorar el tablero, y
+ * cuando de verdad haya algo pendiente nadie lo va a mirar.
+ *
+ * TODO Etapa 6 y 7: aquí entran los vencimientos del calendario tributario y las
+ * políticas pendientes de aceptar, que son las otras dos cosas que esperan por
+ * alguien. Hoy no existen todavía, así que no se dibujan.
+ */
 export default function PaginaInicio() {
   const { data: sesion } = useSesion();
   const { empresaId } = useEmpresa();
 
   const empresa = sesion?.empresas.find((candidata) => candidata.id === empresaId);
-  const modulos = modulosVisibles(sesion).filter((modulo) => modulo !== 'ADMINISTRACION');
+  const modulos = modulosVisibles(sesion);
   const nombre = sesion?.usuario.nombre.split(' ')[0] ?? '';
+
+  const verOperaciones = puedeVer(sesion, 'OPERACIONES');
+
+  const { data: resumen, isLoading } = useQuery({
+    queryKey: ['operaciones-resumen', empresaId],
+    // Sin empresa activa no hay nada que resumir, y sin permiso el API responde 403.
+    enabled: Boolean(empresaId) && verOperaciones,
+    queryFn: () => peticion<ResumenOperaciones>('operaciones/resumen', { empresaId }),
+  });
 
   return (
     <>
-      <EncabezadoPagina
-        titulo={nombre ? `Hola, ${nombre}` : 'Inicio'}
-        descripcion={
-          empresa
-            ? 'Todo lo que registres queda bajo la empresa seleccionada arriba.'
-            : 'Selecciona una empresa en la barra superior para empezar.'
-        }
-      />
+      <HeroePortada nombre={nombre} empresa={empresa} modulos={modulos} />
 
-      <div className="p-6">
-        {empresa && (
-          <div className="mb-6 flex items-center justify-between gap-4 rounded-md border border-borde bg-superficie-alt px-4 py-3">
-            <div className="min-w-0">
-              <p className="encabezado-columna">Empresa activa</p>
-              <p className="mt-1 truncate text-[14px] font-medium text-tinta">{empresa.nombre}</p>
+      <div className="mx-auto grid max-w-[1180px] gap-10 px-6 py-12 lg:grid-cols-[1.6fr_1fr] lg:px-10">
+        {/* ── Lo que espera por alguien ────────────────────────────────────── */}
+        <section>
+          <EncabezadoSeccion
+            titulo="Acción requerida"
+            descripcion="Lo que está detenido esperando a que alguien lo cierre."
+            tono="peligro"
+          />
+
+          {!verOperaciones ? (
+            <TarjetaVacia
+              titulo="Nada pendiente para ti"
+              detalle="No tienes acceso al módulo de Operaciones, que es de donde salen los pendientes de esta etapa."
+            />
+          ) : isLoading ? (
+            <Esqueleto className="h-[92px] rounded-xl" />
+          ) : resumen && resumen.dispersionesPendientes > 0 ? (
+            <Link
+              href="/operaciones/dispersiones?estado=PENDIENTE"
+              className="group flex items-center gap-4 rounded-xl border border-peligro-borde bg-peligro-suave px-5 py-4 transition-colors hover:border-peligro"
+            >
+              <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-peligro/10 text-peligro">
+                <Split className="size-[18px]" strokeWidth={1.8} aria-hidden />
+              </span>
+              <span className="min-w-0 flex-1">
+                <span className="block text-[15px] font-semibold text-tinta">
+                  {resumen.dispersionesPendientes}{' '}
+                  {resumen.dispersionesPendientes === 1
+                    ? 'dispersión sin cerrar'
+                    : 'dispersiones sin cerrar'}
+                </span>
+                <span className="mt-0.5 block text-[13px] text-grafito">
+                  Tienen giros por marcar como ejecutados o devueltos.
+                </span>
+              </span>
+              <ArrowRight
+                className="size-4 shrink-0 text-peligro transition-transform group-hover:translate-x-0.5"
+                aria-hidden
+              />
+            </Link>
+          ) : (
+            <TarjetaVacia
+              titulo="Todo al día"
+              detalle="No hay dispersiones con giros pendientes en esta empresa."
+              exito
+            />
+          )}
+        </section>
+
+        {/* ── El pulso del mes ─────────────────────────────────────────────── */}
+        <section>
+          <EncabezadoSeccion titulo="El mes" descripcion="Operaciones vigentes." />
+
+          {!verOperaciones ? (
+            <TarjetaVacia titulo="Sin acceso" detalle="Necesitas permiso sobre Operaciones." />
+          ) : isLoading ? (
+            <Esqueleto className="h-[220px] rounded-xl" />
+          ) : (
+            <div className="rounded-xl border border-borde bg-superficie p-5 shadow-tarjeta">
+              <p className="encabezado-columna">Ganancia acumulada</p>
+              <p className="cifra mt-1.5 text-[26px] font-semibold tracking-tight text-tinta">
+                {formatear(resumen?.gananciaCOP ?? '0.00', 'COP')}
+              </p>
+
+              <p className="mt-1 text-[13px] text-grafito">
+                {resumen?.cantidad ?? 0}{' '}
+                {resumen?.cantidad === 1 ? 'operación registrada' : 'operaciones registradas'}
+              </p>
+
+              {resumen && resumen.cantidad > 0 && (
+                <ul className="mt-4 space-y-2 border-t border-borde-suave pt-4">
+                  {(
+                    Object.entries(resumen.porEstado) as [
+                      keyof ResumenOperaciones['porEstado'],
+                      number,
+                    ][]
+                  )
+                    .filter(([, total]) => total > 0)
+                    .map(([estado, total]) => (
+                      <li key={estado} className="flex items-baseline justify-between gap-3">
+                        <span className="text-[13px] text-grafito">
+                          {ETIQUETA_ESTADO_OPERACION[estado]}
+                        </span>
+                        <span className="cifra text-tinta">{total}</span>
+                      </li>
+                    ))}
+                </ul>
+              )}
+
+              {resumen && resumen.volumenPorMoneda.length > 0 && (
+                <div className="mt-4 border-t border-borde-suave pt-4">
+                  {/* Separado por moneda: sumar dólares con pesos no significa nada. */}
+                  <p className="encabezado-columna mb-2">Volumen movido</p>
+                  <ul className="space-y-1.5">
+                    {resumen.volumenPorMoneda.map((fila) => (
+                      <li key={fila.moneda} className="flex items-baseline justify-between gap-3">
+                        <span className="text-[13px] text-grafito">{fila.moneda}</span>
+                        <span className="cifra text-tinta">
+                          {formatear(fila.compra, fila.moneda)}
+                        </span>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
             </div>
-            <span className="cifra shrink-0 text-tenue">
-              NIT {empresa.nit}-{empresa.digitoVerificacion}
-            </span>
-          </div>
-        )}
-
-        {modulos.length === 0 ? (
-          <div className="rounded-md border border-borde bg-superficie px-4 py-8 text-center">
-            <p className="text-[14px] font-medium text-tinta">Todavía no tienes módulos</p>
-            <p className="mx-auto mt-1 max-w-[380px] text-[13px] leading-relaxed text-grafito">
-              Un administrador tiene que darte acceso para que aparezcan en la barra lateral.
-            </p>
-          </div>
-        ) : (
-          <>
-            <p className="encabezado-columna mb-2.5">Tus módulos</p>
-            <ul className="grid gap-2.5 sm:grid-cols-2 xl:grid-cols-3">
-              {modulos.map((modulo) => {
-                const Icono = ICONO[modulo] ?? Wallet;
-                return (
-                  <li key={modulo}>
-                    <Link
-                      href={RUTA_MODULO[modulo]}
-                      className="group flex h-full items-start gap-3 rounded-md border border-borde bg-superficie px-4 py-3.5 transition-colors hover:border-borde-fuerte hover:bg-superficie-alt"
-                    >
-                      <span className="grid size-8 shrink-0 place-items-center rounded-sm border border-borde bg-superficie-alt text-tenue transition-colors group-hover:border-acento-borde group-hover:bg-acento-suave group-hover:text-acento">
-                        <Icono className="size-4" aria-hidden />
-                      </span>
-
-                      <span className="min-w-0 flex-1">
-                        <span className="flex items-center gap-1.5">
-                          <span className="text-[14px] font-medium text-tinta">
-                            {ETIQUETA_MODULO[modulo]}
-                          </span>
-                          <ArrowRight
-                            className="size-3.5 shrink-0 text-tenue opacity-0 transition-opacity group-hover:opacity-100"
-                            aria-hidden
-                          />
-                        </span>
-                        <span className="mt-0.5 block text-[12px] leading-snug text-grafito">
-                          {QUE_HACE[modulo]}
-                        </span>
-                      </span>
-                    </Link>
-                  </li>
-                );
-              })}
-            </ul>
-          </>
-        )}
+          )}
+        </section>
       </div>
     </>
+  );
+}
+
+/** Tarjeta de «no hay nada», que no es lo mismo que un error. */
+function TarjetaVacia({
+  titulo,
+  detalle,
+  exito,
+}: {
+  titulo: string;
+  detalle: string;
+  exito?: boolean;
+}) {
+  return (
+    <div className="flex items-center gap-4 rounded-xl border border-borde bg-superficie px-5 py-4 shadow-tarjeta">
+      {exito && (
+        <span className="grid size-10 shrink-0 place-items-center rounded-lg bg-exito-suave text-exito">
+          <CheckCircle2 className="size-[18px]" strokeWidth={1.8} aria-hidden />
+        </span>
+      )}
+      <span className="min-w-0">
+        <span className="block text-[15px] font-semibold text-tinta">{titulo}</span>
+        <span className="mt-0.5 block text-[13px] leading-snug text-grafito">{detalle}</span>
+      </span>
+    </div>
   );
 }

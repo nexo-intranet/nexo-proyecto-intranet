@@ -32,7 +32,7 @@ export function PanelLateral({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-40 bg-black/10" />
         <Dialog.Content
-          className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[440px] flex-col border-l border-borde bg-white shadow-[-4px_0_16px_rgba(0,0,0,0.04)]"
+          className="fixed right-0 top-0 z-50 flex h-full w-full max-w-[440px] flex-col border-l border-borde bg-superficie shadow-flotante"
           aria-describedby={descripcion ? 'panel-descripcion' : undefined}
         >
           <div className="flex shrink-0 items-start justify-between gap-4 border-b border-borde px-5 py-4">

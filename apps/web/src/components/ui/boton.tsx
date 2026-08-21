@@ -34,11 +34,11 @@ const variantes = cva(
           'active:bg-borde-suave',
         ].join(' '),
         fantasma: 'text-grafito hover:bg-superficie-alt hover:text-tinta active:bg-borde-suave',
-        peligro: 'bg-peligro text-white hover:bg-[#991b1b] active:bg-[#7f1d1d]',
+        peligro: 'bg-peligro text-white hover:bg-peligro-fuerte active:bg-peligro-fuerte',
         /** Acción destructiva secundaria: se lee el riesgo sin dominar la pantalla. */
         peligroSuave: [
           'border border-peligro-borde bg-peligro-suave text-peligro',
-          'hover:bg-[#fee2e2]',
+          'hover:bg-peligro-borde/50',
         ].join(' '),
       },
       tamano: {

@@ -5,7 +5,7 @@ import type { SesionActual } from '@nexo/shared';
 import { ETIQUETA_MODULO, RUTA_MODULO } from '@nexo/shared';
 import { CornerDownLeft, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { useEmpresa } from '@/lib/empresa';
 import { modulosVisibles } from '@/lib/sesion';
 import { cn } from '@/lib/utils';
@@ -29,16 +29,28 @@ interface Resultado {
 export function PaletaComandos({
   sesion,
   abierto,
+  consultaInicial = '',
   onCambiarAbierto,
 }: {
   sesion: SesionActual | undefined;
   abierto: boolean;
+  /** Texto con el que abre, cuando viene de un buscador de la página. */
+  consultaInicial?: string;
   onCambiarAbierto: (abierto: boolean) => void;
 }) {
   const router = useRouter();
   const { cambiarEmpresa } = useEmpresa();
   const [consulta, setConsulta] = useState('');
   const [seleccionado, setSeleccionado] = useState(0);
+
+  // Al abrir se hereda lo que ya venía escrito en el buscador de la portada, para
+  // no obligar a teclear dos veces lo mismo.
+  useEffect(() => {
+    if (abierto) {
+      setConsulta(consultaInicial);
+      setSeleccionado(0);
+    }
+  }, [abierto, consultaInicial]);
 
   const resultados = useMemo<Resultado[]>(() => {
     const texto = consulta.trim().toLowerCase();
@@ -90,7 +102,7 @@ export function PaletaComandos({
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/20" />
         <Dialog.Content
-          className="fixed left-1/2 top-[15%] z-50 w-full max-w-[560px] -translate-x-1/2 rounded-[6px] border border-borde bg-white shadow-[0_12px_32px_rgba(0,0,0,0.10)]"
+          className="fixed left-1/2 top-[15%] z-50 w-full max-w-[560px] -translate-x-1/2 rounded-[6px] border border-borde bg-superficie shadow-flotante"
           aria-describedby={undefined}
         >
           <Dialog.Title className="sr-only">Búsqueda global</Dialog.Title>

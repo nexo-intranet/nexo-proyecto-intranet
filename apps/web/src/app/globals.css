@@ -1,24 +1,31 @@
 @import 'tailwindcss';
 
 /**
- * Sistema de diseño — tinta sobre papel.
+ * Sistema de diseño — dos ritmos, un solo lenguaje.
  *
- * Esto se usa ocho horas al día para mover plata de terceros. No busca impacto
- * visual: busca que quien lo mira confíe en que la cifra en pantalla es la cifra
- * correcta. La referencia no es una aplicación bonita, es **un libro contable bien
- * llevado** — preciso, ordenado, verificable.
+ * Nexo es dos cosas a la vez, y el diseño tiene que servir a las dos.
  *
- * De ahí salen los colores: papel, tinta ferrogálica azul-negra, grafito, y los
- * sellos verde y rojo de conciliado y anulado.
+ * **La portada** es una intranet: alguien llega en la mañana, quiere saber qué le
+ * toca hoy y entrar a lo suyo en dos clics. Ahí manda el aire, la tipografía
+ * grande y las formas suaves. Es el ritmo que pidió la clienta.
+ *
+ * **Las pantallas de trabajo** son un back-office: alguien pasa ocho horas
+ * moviendo plata de terceros. Ahí manda la densidad — veinte filas por pantalla,
+ * cifras alineadas, nada que robe espacio. La referencia no es una aplicación
+ * bonita, es un libro contable bien llevado.
+ *
+ * Comparten paleta, tipografía y tarjetas. Cambian el ritmo, no el idioma.
  *
  * Tres reglas que gobiernan todo lo demás:
- *   · Profundidad por bordes, no por sombras. Solo lo que de verdad flota —menú,
- *     panel lateral, modal— proyecta sombra, y muy suave.
- *   · El color significa algo. Un elemento en azul es accionable o está activo.
- *     Nada se pinta para decorar.
- *   · Los grises son fríos. Con un acento azul, un gris cálido se ve sucio.
+ *   · El papel tiene tinte y las tarjetas son blancas. Por eso flotan solas, sin
+ *     necesidad de sombra. La profundidad la da el contraste, no el desenfoque.
+ *   · El color significa algo. Azul es accionable o activo; coral es urgente;
+ *     verde es conciliado. Lo único que se pinta para decorar es `decorativo`,
+ *     y por eso lleva ese nombre: nunca toca un elemento que se pueda hacer clic.
+ *   · Los grises son fríos, con tinte violeta. Con un acento azul, un gris cálido
+ *     se ve sucio.
  *
- * No hay modo oscuro. Es una decisión del cliente, no un pendiente.
+ * No hay modo oscuro. Es una decisión de la clienta, no un pendiente.
  *
  * OJO CON LA SINTAXIS: en Tailwind 4 estos tokens se usan como `bg-acento`,
  * `text-grafito`, `border-borde`. La forma `bg-[--color-acento]` es de Tailwind 3
@@ -26,50 +33,66 @@
  */
 
 @theme {
-  /* ── Papel: las superficies, de la más baja a la más alta ───────────────── */
-  --color-papel: #ffffff;
+  /* ── Papel: el fondo tiene tinte; las tarjetas, no ──────────────────────── */
+  /* Lavanda muy claro. Es lo que hace que una tarjeta blanca se vea encima. */
+  --color-papel: #f4f5fb;
   --color-superficie: #ffffff;
-  /* Encabezados de tabla, barra lateral, filas alternas. Frío, casi imperceptible. */
-  --color-superficie-alt: #f8fafc;
+  /* Dentro de una tarjeta blanca: encabezados de tabla, filas alternas. */
+  --color-superficie-alt: #f5f6fc;
   /* Campos de formulario: van hundidos, un punto más oscuros que su entorno. */
-  --color-campo: #f8fafc;
+  --color-campo: #f5f6fc;
 
   /* ── Bordes: cuatro pesos, no uno ───────────────────────────────────────── */
-  --color-borde: #e2e8f0;
-  --color-borde-suave: #f1f5f9;
-  --color-borde-fuerte: #cbd5e1;
+  --color-borde: #e4e6f2;
+  --color-borde-suave: #eff0f8;
+  --color-borde-fuerte: #c9cce3;
 
   /* ── Tinta: cuatro niveles de texto, cada uno con su oficio ─────────────── */
-  --color-tinta: #0f172a;
-  --color-grafito: #475569;
-  --color-tenue: #94a3b8;
-  --color-apagado: #cbd5e1;
+  --color-tinta: #101a47;
+  --color-grafito: #4a5378;
+  --color-tenue: #8a92b5;
+  --color-apagado: #c0c5dc;
 
   /* ── Acento: azul de estilógrafo, no azul de SaaS ───────────────────────── */
   --color-acento: #1e40af;
-  --color-acento-fuerte: #1e3a8a;
-  --color-acento-borde: #bfdbfe;
-  --color-acento-suave: #eff6ff;
+  --color-acento-fuerte: #16307f;
+  --color-acento-borde: #bfd0f5;
+  --color-acento-suave: #edf2fe;
+
+  /* ── Decorativo: el único color sin significado ─────────────────────────── */
+  /* Periwinkle. Círculos, tramas de puntos, curvas de la portada. Si aparece en
+     algo en lo que se pueda hacer clic, está mal usado. */
+  --color-decorativo: #7c83e8;
+  --color-decorativo-suave: #e6e8fb;
 
   /* ── Sellos: el color como estado, nunca como adorno ────────────────────── */
-  --color-exito: #15803d;
-  --color-exito-suave: #f0fdf4;
-  --color-exito-borde: #bbf7d0;
+  --color-exito: #0f7a3d;
+  --color-exito-suave: #eefaf2;
+  --color-exito-borde: #b4e5c8;
   --color-alerta: #b45309;
-  --color-alerta-suave: #fffbeb;
-  --color-alerta-borde: #fed7aa;
-  --color-peligro: #b91c1c;
-  --color-peligro-suave: #fef2f2;
-  --color-peligro-borde: #fecaca;
+  --color-alerta-suave: #fffaeb;
+  --color-alerta-borde: #fde3b0;
+  /* Coral, no ladrillo: es el rojo de «acción requerida» de la referencia. */
+  --color-peligro: #d92d3e;
+  --color-peligro-fuerte: #b3202f;
+  --color-peligro-suave: #fdeef0;
+  --color-peligro-borde: #f8c9cf;
 
-  /* ── Radios contenidos: más afilado se siente técnico ───────────────────── */
-  --radius-sm: 4px;
-  --radius-md: 6px;
-  --radius-lg: 8px;
+  /* ── Radios: dos escalas ────────────────────────────────────────────────── */
+  /* Las tres primeras son para trabajar: contenidas, se sienten técnicas. */
+  --radius-sm: 6px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  /* Estas dos son de la portada: tarjetas grandes y pastillas. */
+  --radius-xl: 20px;
+  --radius-pill: 999px;
 
   /* ── Sombras: solo para lo que flota de verdad ──────────────────────────── */
-  --shadow-flotante: 0 4px 16px -4px rgb(15 23 42 / 0.1), 0 2px 6px -2px rgb(15 23 42 / 0.06);
-  --shadow-panel: -8px 0 24px -8px rgb(15 23 42 / 0.08);
+  /* Las tarjetas no llevan sombra — el papel con tinte ya las separa. Esto es
+     para lo que se despega de la página: menús, paneles, modales. */
+  --shadow-tarjeta: 0 1px 2px rgb(16 26 71 / 0.04);
+  --shadow-flotante: 0 8px 28px -8px rgb(16 26 71 / 0.14), 0 2px 8px -3px rgb(16 26 71 / 0.08);
+  --shadow-panel: -8px 0 24px -8px rgb(16 26 71 / 0.1);
 
   --font-sans:
     var(--fuente-interfaz), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
@@ -102,6 +125,8 @@
     border-radius: var(--radius-sm);
   }
 
+  /* h1 y h2 son los de las pantallas de trabajo, que es donde más se usan. La
+     portada usa .titulo-portada y .titulo-seccion, que sí van en grande. */
   h1 {
     font-size: 19px;
     font-weight: 600;
@@ -128,7 +153,8 @@
   }
   ::-webkit-scrollbar-thumb {
     background-color: var(--color-borde-fuerte);
-    border: 3px solid var(--color-papel);
+    border: 3px solid transparent;
+    background-clip: padding-box;
     border-radius: 8px;
   }
   ::-webkit-scrollbar-thumb:hover {
@@ -174,5 +200,28 @@
     font-size: 12px;
     font-weight: 500;
     color: var(--color-grafito);
+  }
+
+  /**
+   * El saludo de la portada.
+   *
+   * Grande de verdad. Es lo único en todo el sistema que se permite este tamaño,
+   * y solo aparece una vez: en la primera pantalla del día.
+   */
+  .titulo-portada {
+    font-size: clamp(34px, 4.4vw, 52px);
+    font-weight: 700;
+    line-height: 1.06;
+    letter-spacing: -0.035em;
+    color: var(--color-tinta);
+  }
+
+  /* Título de sección de la portada. Va con su barra de color al lado. */
+  .titulo-seccion {
+    font-size: clamp(22px, 2.4vw, 30px);
+    font-weight: 700;
+    line-height: 1.15;
+    letter-spacing: -0.025em;
+    color: var(--color-tinta);
   }
 }

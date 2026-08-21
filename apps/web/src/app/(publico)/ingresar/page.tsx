@@ -66,7 +66,7 @@ export default function PaginaIngresar() {
       {errorGeneral && (
         <p
           role="alert"
-          className="rounded-[4px] border border-peligro bg-[#fef2f2] px-3 py-2 text-[13px] text-peligro"
+          className="rounded-sm border border-peligro-borde bg-peligro-suave px-3 py-2 text-[13px] text-peligro"
         >
           {errorGeneral}
         </p>
