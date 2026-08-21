@@ -3,13 +3,17 @@ import { cn } from '@/lib/utils';
 /**
  * Las formas de la portada.
  *
- * Círculos suaves, tramas de puntos y una curva. Es lo que la referencia pone
- * detrás de la foto, y es lo que Nexo usa **en vez** de la foto: una imagen de
- * banco en una herramienta que usan diez personas internas se ve prestada.
+ * Círculos suaves, tramas de puntos y curvas. Es lo que la referencia pone detrás
+ * de la foto, y es lo que Nexo usa **en vez** de la foto: una imagen de banco en
+ * una herramienta que usan diez personas internas se ve prestada.
  *
- * Todo esto es `aria-hidden` y `pointer-events-none`. No es contenido, no se
- * puede tocar, y a un lector de pantalla no le interesa. Va en `decorativo`,
- * el único color del sistema que no significa nada.
+ * La composición es simétrica porque el contenido va centrado. Con el héroe
+ * alineado a la izquierda funcionaba una diagonal; centrado, una diagonal deja la
+ * página visualmente escorada.
+ *
+ * Todo esto es `aria-hidden` y `pointer-events-none`. No es contenido, no se toca,
+ * y a un lector de pantalla no le interesa. Va en `decorativo`, el único color del
+ * sistema que no significa nada.
  */
 
 /** Trama de puntos. Gradiente repetido, que pesa menos que un SVG con 200 círculos. */
@@ -22,7 +26,7 @@ export function Puntos({ className }: { className?: string }) {
         backgroundImage:
           'radial-gradient(circle, var(--color-decorativo) 1.4px, transparent 1.4px)',
         backgroundSize: '13px 13px',
-        opacity: 0.32,
+        opacity: 0.28,
       }}
     />
   );
@@ -39,64 +43,58 @@ function Circulo({ className, opacidad = 0.5 }: { className?: string; opacidad?:
   );
 }
 
-/**
- * Composición de fondo del héroe.
- *
- * Se recorta contra su contenedor (`overflow-hidden` allá) para que los círculos
- * puedan salirse del borde: una forma cortada por el marco se lee como parte de
- * algo más grande, y una centrada se lee como un adorno.
- */
 export function FondoPortada() {
   return (
     <>
-      {/* Círculo grande arriba a la izquierda, mordido por el borde. */}
+      {/* Dos círculos grandes, uno por lado, mordidos por el borde. Cortados por el
+          marco se leen como parte de algo más grande; centrados, como un adorno. */}
       <Circulo
-        className="-left-24 -top-28 size-[380px] bg-decorativo-suave blur-[2px]"
-        opacidad={0.9}
+        className="-left-32 -top-40 size-[440px] bg-decorativo-suave blur-[1px]"
+        opacidad={0.85}
+      />
+      <Circulo
+        className="-right-40 -top-28 size-[380px] bg-decorativo-suave blur-[1px]"
+        opacidad={0.6}
       />
 
       {/* El que se asoma detrás del mosaico de módulos, como en la referencia. */}
       <Circulo
-        className="bottom-[-140px] left-[38%] size-[300px] bg-decorativo blur-[1px]"
-        opacidad={0.16}
+        className="bottom-[-180px] left-1/2 size-[420px] -translate-x-1/2 bg-decorativo blur-[1px]"
+        opacidad={0.13}
       />
 
-      {/* Acento pequeño y sólido: le da un punto de foco a la composición. */}
-      <Circulo className="left-[46%] top-[52%] size-7 bg-decorativo" opacidad={0.55} />
+      <Puntos className="bottom-20 left-6 h-24 w-28 lg:left-14" />
+      <Puntos className="right-6 top-16 h-24 w-28 lg:right-14" />
 
-      <Puntos className="bottom-16 left-8 h-24 w-28" />
-      <Puntos className="right-10 top-10 h-20 w-24" />
-
-      {/* La curva. Arranca fuera del marco por arriba y sale por la derecha. */}
+      {/* Curvas a lado y lado, en espejo. */}
       <svg
         aria-hidden
-        className="pointer-events-none absolute -right-10 top-0 h-full w-[62%] text-decorativo"
-        viewBox="0 0 600 460"
+        className="pointer-events-none absolute inset-0 h-full w-full text-decorativo"
+        viewBox="0 0 1440 620"
         fill="none"
-        preserveAspectRatio="xMidYMid slice"
+        preserveAspectRatio="none"
       >
         <path
-          d="M-40 -60 C 220 40, 470 130, 520 300 C 548 396, 470 452, 360 470"
+          d="M-60 -40 C 260 120, 300 420, 180 660"
           stroke="currentColor"
           strokeWidth="1.5"
-          opacity="0.35"
+          opacity="0.22"
         />
         <path
-          d="M120 -80 C 340 60, 560 170, 596 340"
+          d="M1500 -40 C 1180 120, 1140 420, 1260 660"
           stroke="currentColor"
-          strokeWidth="1"
-          opacity="0.2"
+          strokeWidth="1.5"
+          opacity="0.22"
         />
-        <circle cx="360" cy="470" r="7" fill="currentColor" opacity="0.5" />
       </svg>
 
-      {/* Vela de fondo: el degradado que separa el héroe del resto de la página. */}
+      {/* Vela de fondo: separa el héroe del resto de la página sin una línea dura. */}
       <div
         aria-hidden
         className="pointer-events-none absolute inset-0"
         style={{
           background:
-            'radial-gradient(120% 90% at 78% 18%, rgb(124 131 232 / 0.13) 0%, transparent 58%)',
+            'radial-gradient(90% 70% at 50% 0%, rgb(124 131 232 / 0.14) 0%, transparent 62%)',
         }}
       />
     </>

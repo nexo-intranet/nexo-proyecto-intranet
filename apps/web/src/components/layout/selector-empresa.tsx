@@ -34,10 +34,10 @@ export function SelectorEmpresa({ sesion }: { sesion: SesionActual | undefined }
   return (
     <DropdownMenu.Root>
       <DropdownMenu.Trigger
-        className="flex h-8 items-center gap-2 rounded-[4px] border border-borde bg-superficie px-2.5 text-[13px] hover:bg-superficie-alt"
+        className="flex h-10 items-center gap-2 rounded-md border border-borde bg-superficie px-3 text-[13px] transition-colors hover:border-borde-fuerte hover:bg-superficie-alt"
         aria-label="Cambiar de empresa"
       >
-        <span className="max-w-[220px] truncate font-medium">
+        <span className="max-w-[180px] truncate font-medium text-tinta">
           {actual?.nombre ?? 'Selecciona una empresa'}
         </span>
         <ChevronsUpDown className="size-3.5 text-grafito" aria-hidden />
@@ -47,7 +47,7 @@ export function SelectorEmpresa({ sesion }: { sesion: SesionActual | undefined }
         <DropdownMenu.Content
           align="start"
           sideOffset={4}
-          className="z-50 min-w-[260px] rounded-[6px] border border-borde bg-superficie p-1 shadow-flotante"
+          className="z-50 min-w-[260px] rounded-md border border-borde bg-superficie p-1 shadow-flotante"
         >
           {empresas.map((empresa) => {
             const seleccionada = empresa.id === empresaId;

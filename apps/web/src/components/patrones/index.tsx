@@ -12,13 +12,24 @@ export function EncabezadoPagina({
   acciones?: ReactNode;
 }) {
   return (
-    <div className="flex shrink-0 items-start justify-between gap-4 border-b border-borde bg-superficie px-6 py-4">
-      <div className="min-w-0 space-y-1">
-        <h1 className="truncate">{titulo}</h1>
-        {descripcion && <p className="text-[13px] leading-snug text-grafito">{descripcion}</p>}
+    <div className="shrink-0 border-b border-borde bg-superficie">
+      {/* Mismo ancho que el encabezado de la aplicación: sin barra lateral, lo que
+          alinea las pantallas entre sí es el contenedor, no el borde de la ventana. */}
+      <div className="mx-auto flex max-w-[1240px] items-start justify-between gap-4 px-5 py-4 lg:px-8">
+        <div className="min-w-0 space-y-1">
+          <h1 className="truncate">{titulo}</h1>
+          {descripcion && <p className="text-[13px] leading-snug text-grafito">{descripcion}</p>}
+        </div>
+        {acciones && <div className="flex shrink-0 items-center gap-2">{acciones}</div>}
       </div>
-      {acciones && <div className="flex shrink-0 items-center gap-2">{acciones}</div>}
     </div>
+  );
+}
+
+/** Ancho y márgenes estándar del contenido de una pantalla de trabajo. */
+export function Contenedor({ children, className }: { children: ReactNode; className?: string }) {
+  return (
+    <div className={cn('mx-auto max-w-[1240px] px-5 py-6 lg:px-8', className)}>{children}</div>
   );
 }
 

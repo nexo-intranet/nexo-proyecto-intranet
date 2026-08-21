@@ -2,7 +2,6 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
-import { BarraLateral } from '@/components/layout/barra-lateral';
 import { BarraSuperior } from '@/components/layout/barra-superior';
 import { PaletaComandos } from '@/components/layout/paleta-comandos';
 import { ErrorDeApi } from '@/lib/api/cliente';
@@ -10,8 +9,11 @@ import { EVENTO_ABRIR_BUSCADOR, type DetalleAbrirBuscador } from '@/lib/buscador
 import { useSesion } from '@/lib/sesion';
 
 /**
- * Marco de la aplicación (brief §7): barra lateral fija a la izquierda, barra
- * superior con el selector de empresa y la búsqueda global, contenido a la derecha.
+ * Marco de la aplicación.
+ *
+ * Una sola barra arriba y todo el ancho para el contenido. La barra lateral se
+ * quitó: duplicaba el mosaico de la portada y le robaba 200px a pantallas que son,
+ * en su mayoría, tablas de datos. Su navegación se mudó al encabezado.
  *
  * Que aquí se redirija al ingreso es comodidad de navegación, no seguridad: el
  * backend rechaza igual cualquier petición sin sesión.
@@ -56,26 +58,35 @@ export default function LayoutAplicacion({ children }: { children: React.ReactNo
 
   if (isLoading) {
     return (
-      <div className="flex h-screen">
-        <div className="w-[200px] border-r border-borde bg-superficie-alt" />
-        <div className="flex-1">
-          <div className="h-12 border-b border-borde" />
-          <div className="space-y-3 p-6">
-            <div className="h-6 w-48 animate-pulse rounded-[4px] bg-superficie-alt" />
-            <div className="h-40 animate-pulse rounded-[6px] bg-superficie-alt" />
-          </div>
+      <div className="flex h-dvh flex-col">
+        <div className="h-16 border-b border-borde bg-superficie" />
+        <div className="mx-auto max-w-[1240px] space-y-4 px-5 py-14 lg:px-8">
+          <div className="mx-auto h-12 w-[420px] max-w-full animate-pulse rounded-lg bg-superficie" />
+          <div className="mx-auto h-11 w-[520px] max-w-full animate-pulse rounded-pill bg-superficie" />
+          <div className="mx-auto h-24 w-full max-w-[760px] animate-pulse rounded-xl bg-superficie" />
         </div>
       </div>
     );
   }
 
   return (
-    <div className="flex h-screen overflow-hidden">
-      <BarraLateral sesion={sesion} />
-      <div className="flex min-w-0 flex-1 flex-col">
-        <BarraSuperior sesion={sesion} onAbrirBuscador={() => setBuscadorAbierto(true)} />
-        <main className="flex-1 overflow-auto">{children}</main>
-      </div>
+    <div className="flex h-dvh flex-col overflow-hidden">
+      {/* Primera parada del tabulador: saltar la navegación y entrar al contenido. */}
+      <a
+        href="#contenido"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-acento focus:px-4 focus:py-2 focus:text-[13px] focus:text-superficie"
+      >
+        Saltar al contenido
+      </a>
+
+      <BarraSuperior sesion={sesion} onAbrirBuscador={() => setBuscadorAbierto(true)} />
+
+      {/* El marco tiene altura fija y el contenido hace su propio scroll: es lo que
+          permite que una tabla densa fije su encabezado mientras corren las filas. */}
+      <main id="contenido" tabIndex={-1} className="min-h-0 flex-1 overflow-auto">
+        {children}
+      </main>
+
       <PaletaComandos
         sesion={sesion}
         abierto={buscadorAbierto}

@@ -17,7 +17,7 @@ export default function LayoutAdministracion({ children }: { children: React.Rea
     <div className="flex h-full flex-col">
       <nav
         aria-label="Secciones de administración"
-        className="flex shrink-0 items-center gap-1 border-b border-borde px-4"
+        className="mx-auto flex w-full max-w-[1240px] shrink-0 items-center gap-1 border-b border-borde px-5 lg:px-8"
       >
         {SECCIONES.map((seccion) => {
           const activa = ruta.startsWith(seccion.href);

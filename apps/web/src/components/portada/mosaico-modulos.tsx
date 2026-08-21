@@ -38,7 +38,7 @@ export function MosaicoModulos({ modulos }: { modulos: ModuloSistema[] }) {
   if (modulos.length === 0) return null;
 
   return (
-    <ul className="relative flex flex-wrap gap-2.5">
+    <ul className="relative flex flex-wrap justify-center gap-3">
       {modulos.map((modulo) => {
         const Icono = ICONO[modulo];
 
@@ -46,12 +46,12 @@ export function MosaicoModulos({ modulos }: { modulos: ModuloSistema[] }) {
           <li key={modulo}>
             <Link
               href={RUTA_MODULO[modulo]}
-              className="group flex w-[96px] flex-col items-center gap-2 rounded-xl border border-borde bg-superficie/85 px-2 py-3.5 backdrop-blur-sm transition-all hover:-translate-y-0.5 hover:border-acento-borde hover:bg-superficie hover:shadow-flotante"
+              className="group flex w-[104px] flex-col items-center gap-2.5 rounded-xl border border-borde bg-superficie/80 px-2 py-4 backdrop-blur-sm transition-[border-color,background-color,box-shadow,transform] duration-200 hover:-translate-y-0.5 hover:border-acento-borde hover:bg-superficie hover:shadow-flotante"
             >
-              <span className="grid size-11 place-items-center rounded-lg border border-borde bg-superficie-alt text-acento transition-colors group-hover:border-acento-borde group-hover:bg-acento-suave">
-                <Icono className="size-[18px]" strokeWidth={1.6} aria-hidden />
+              <span className="grid size-12 place-items-center rounded-lg border border-borde bg-superficie-alt text-acento transition-colors group-hover:border-acento-borde group-hover:bg-acento-suave">
+                <Icono className="size-5" strokeWidth={1.6} aria-hidden />
               </span>
-              <span className="text-center text-[12px] font-semibold leading-tight text-tinta">
+              <span className="text-center text-[12.5px] font-semibold leading-tight text-tinta">
                 {ETIQUETA_MODULO[modulo]}
               </span>
             </Link>

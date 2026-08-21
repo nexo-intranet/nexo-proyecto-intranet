@@ -50,7 +50,10 @@
   /* ── Tinta: cuatro niveles de texto, cada uno con su oficio ─────────────── */
   --color-tinta: #101a47;
   --color-grafito: #4a5378;
-  --color-tenue: #8a92b5;
+  /* 4,65:1 sobre blanco. El valor anterior (#8a92b5) daba 3,07:1 y no pasaba AA,
+     justo en el texto más pequeño del sistema: los encabezados de columna. */
+  --color-tenue: #6b7396;
+  /* Solo para deshabilitado y marcas de agua, nunca para texto que haya que leer. */
   --color-apagado: #c0c5dc;
 
   /* ── Acento: azul de estilógrafo, no azul de SaaS ───────────────────────── */
@@ -139,6 +142,23 @@
     font-weight: 600;
     letter-spacing: -0.005em;
     color: var(--color-tinta);
+  }
+
+  /**
+   * Movimiento reducido.
+   *
+   * Hay gente que marca esto en el sistema operativo porque el movimiento le
+   * produce mareo o migraña. No es una preferencia estética: se respeta.
+   */
+  @media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+      animation-duration: 0.01ms !important;
+      animation-iteration-count: 1 !important;
+      transition-duration: 0.01ms !important;
+      scroll-behavior: auto !important;
+    }
   }
 
   ::selection {
