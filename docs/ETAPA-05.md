@@ -1,6 +1,6 @@
 # Etapa 5 — Empleados · Esquema y API
 
-> **Propuesta. Pendiente de confirmar antes de escribir código.**
+> **Construida (2026-08-22),** con las tres decisiones tal como se recomendaron.
 > Contexto: `docs/ARQUITECTURA.md` §4 · Seguridad vinculante: `docs/SEGURIDAD.md`
 
 El brief pide tres documentos y una ficha (§6, módulo 03):

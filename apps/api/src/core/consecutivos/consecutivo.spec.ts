@@ -98,6 +98,15 @@ describe('ConsecutivoService', () => {
     expect(otra.numero).toBe(1);
   });
 
+  /**
+   * Timeout generoso, y no por debilitar la prueba.
+   *
+   * Veinte transacciones se serializan sobre el mismo `SELECT ... FOR UPDATE`, que
+   * es justo lo que se está comprobando. Con el resto del monorepo compilando en
+   * paralelo, esa fila tarda más que los 5 s que Jest da por defecto, y la prueba
+   * falla por falta de CPU en vez de por un número repetido. Lo que verifica —que no
+   * haya duplicados ni huecos— sigue siendo exactamente lo mismo.
+   */
   it('veinte emisiones simultáneas no repiten ningún número', async () => {
     const cantidad = 20;
 
@@ -115,7 +124,7 @@ describe('ConsecutivoService', () => {
     expect([...unicos].sort((a, b) => a - b)).toEqual(
       Array.from({ length: cantidad }, (_, i) => i + 1),
     );
-  });
+  }, 30_000);
 
   it('no emite sin empresa en el contexto', async () => {
     await expect(

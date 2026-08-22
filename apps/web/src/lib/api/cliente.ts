@@ -176,12 +176,29 @@ export async function descargarArchivo(
   ruta: string,
   nombre: string,
   empresaId: string | null,
+  /** Algunos documentos se emiten y se descargan en el mismo paso: van por POST. */
+  opciones: { metodo?: 'GET' | 'POST'; cuerpo?: unknown } = {},
 ): Promise<void> {
-  const pedir = () =>
-    fetch(`/api/${ruta.replace(/^\//, '')}`, {
-      headers: empresaId ? { [HEADER_EMPRESA]: empresaId } : {},
+  const { metodo = 'GET', cuerpo } = opciones;
+
+  const pedir = () => {
+    const encabezados: Record<string, string> = {};
+    if (empresaId) encabezados[HEADER_EMPRESA] = empresaId;
+    if (cuerpo !== undefined) encabezados['content-type'] = 'application/json';
+
+    if (metodo !== 'GET') {
+      // Se lee en cada envío: al renovar la sesión el servidor emite un token nuevo.
+      const csrf = tokenCsrf();
+      if (csrf) encabezados[HEADER_CSRF] = csrf;
+    }
+
+    return fetch(`/api/${ruta.replace(/^\//, '')}`, {
+      method: metodo,
+      headers: encabezados,
+      body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
       credentials: 'same-origin',
     });
+  };
 
   let respuesta = await pedir();
 
@@ -190,7 +207,17 @@ export async function descargarArchivo(
   }
 
   if (!respuesta.ok) {
-    throw new ErrorDeApi('ERROR_INTERNO', 'No se pudo descargar el archivo.', respuesta.status);
+    // El servidor sí explica qué pasó —«ese período ya está liquidado»— y perder ese
+    // mensaje dejaría al usuario con un «no se pudo» que no dice nada.
+    const texto = await respuesta.text().catch(() => '');
+    const detalle = texto ? (JSON.parse(texto) as ErrorApi)?.error : undefined;
+
+    throw new ErrorDeApi(
+      detalle?.codigo ?? 'ERROR_INTERNO',
+      detalle?.mensaje ?? 'No se pudo generar el documento.',
+      respuesta.status,
+      detalle?.detalles,
+    );
   }
 
   const url = URL.createObjectURL(await respuesta.blob());
