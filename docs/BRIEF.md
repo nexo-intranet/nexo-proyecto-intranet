@@ -2,6 +2,8 @@
 
 Eres el desarrollador senior a cargo de este proyecto. Lee el brief completo antes de escribir código, y sigue el orden de construcción de la sección final.
 
+> **Revisado el 2026-08-22.** Este documento se corrigió para que coincida con lo que de verdad se construyó en las etapas 1 y 2. Los cambios están listados al final, en «11. Cambios sobre la versión original», con su motivo. Donde el brief y el código difieran, manda el código y hay que corregir aquí.
+
 ---
 
 ## 1. Contexto
@@ -42,7 +44,7 @@ Datos verificados de la API:
 - Documentación: `developers.siigo.com/docs/siigoapi` y `siigoapi.docs.apiary.io`
 - Base URL: `https://api.siigo.com/v1`
 - Autenticación: `POST` de credenciales que devuelve un **token con vigencia de 24 horas**. Cachearlo y renovarlo antes de que expire, no pedir uno por request.
-- Header **`Partner-Id` obligatorio** en cada request. Alfanumérico, 3–100 caracteres, sin espacios ni caracteres especiales, en camelCase. Usar el mismo para todas las empresas conectadas.
+- Header **`Partner-Id` obligatorio** en cada request. Alfanumérico, 3–100 caracteres, sin espacios ni caracteres especiales, en camelCase. Es de Nexo como integrador, no de cada empresa: el mismo para todas las conectadas. (`ConfigFacturacion.partnerId` queda por empresa solo por si alguna llegara a exigir uno propio; normalmente todas comparten valor.)
 - Recursos disponibles: facturas de venta, notas crédito, recibos de caja, clientes (terceros), productos.
 - Creación de facturas por lotes: requiere `notification_url` obligatoria — hay que exponer un webhook para recibir el estado de cada factura.
 - Desde abril de 2025, por la Resolución 165 de 2023 y el anexo técnico 1.8, una factura es **de contado o a crédito, nunca ambas**. El modelo de datos debe reflejarlo.
@@ -63,7 +65,7 @@ Requisitos operativos, no técnicos: las credenciales las genera el cliente desd
 - **Backend:** NestJS + TypeScript, Prisma ORM
 - **Base de datos:** PostgreSQL
 - **Frontend:** Next.js (App Router) + TypeScript + Tailwind
-- **Componentes:** shadcn/ui
+- **Componentes:** propios, sobre primitivas de Radix UI (ver «Cambios» al final)
 - **Tablas:** TanStack Table
 - **Formularios:** React Hook Form + Zod (el mismo esquema Zod valida en cliente y servidor)
 - **Estado servidor:** TanStack Query
@@ -82,7 +84,7 @@ Estas aplican a todo el sistema. Si alguna se rompe en algún módulo, es un bug
 1. **Dinero jamás en `float`.** `Decimal` en Prisma (`@db.Decimal(18,2)`), `decimal.js` en TypeScript. Cripto: `@db.Decimal(36,18)`.
 2. **Multi-moneda desde el inicio.** Toda transacción guarda `monto`, `moneda` (COP/USD/USDT) y, si aplica, `tasaCambio` y `montoCOP` congelados al momento de la operación. Nunca recalcular con la tasa de hoy.
 3. **Los documentos legales no se borran ni se editan.** Facturas, órdenes de pago y recibos de nómina llevan consecutivo único e inmutable. Corregir = anular y emitir uno nuevo, dejando ambos en el historial.
-4. **Soft delete en todo**, con `deletedAt`. Nada se elimina físicamente.
+4. **Soft delete en todo**, con `deletedAt`. Nada se elimina físicamente. **Excepción: los documentos legales con consecutivo** (orden de pago, recibo de nómina, factura) no llevan `deletedAt`. Si pudieran desaparecer de las consultas, la serie de consecutivos quedaría con huecos que nadie sabe explicar. Se anulan, y anuladas siguen visibles.
 5. **Audit log append-only.** Cada mutación registra usuario, acción, entidad, `valorAnterior`, `valorNuevo`, IP y timestamp. La tabla no acepta UPDATE ni DELETE.
 6. **RBAC a nivel de módulo**, verificado en el backend. Ocultar un botón en el frontend no es control de acceso.
 7. **Aislamiento por empresa.** Toda entidad de negocio cuelga de `empresaId`. Ninguna consulta se escribe sin ese filtro — impleméntalo en el repositorio o con middleware de Prisma, no confiando en que cada endpoint se acuerde. Una fuga de datos entre empresas administradas es el peor error posible en este sistema.
@@ -110,18 +112,31 @@ Usuario              id, nombre, email, passwordHash, totpSecret, activo
 Rol                  id, nombre                       // Administrador | Equipo interno
 PermisoModulo        usuarioId, modulo, puedeVer, puedeEditar
 
-Cliente              id, empresaId, nombre, tipoDoc, numeroDoc,
-                     ultimoDigitoNit, municipio, contacto...
-Operacion            id, empresaId, clienteId, hash, valorCompra, valorVenta,
-                     monedaCompra, monedaVenta, tasaCambio, ganancia (calculada),
-                     estado, fechaOperacion
-Dispersion           id, empresaId, operacionId, montoTotal, estado
-DispersionDestino    id, dispersionId, destinatario, monto, porcentaje, estado
+Cliente              id, empresaId, nombre, tipo, tipoDoc,
+                     numeroDocCifrado, numeroDocHash, numeroDocFinal,
+                     ultimoDigitoNit, municipio, email, telefono
+Operacion            id, empresaId, clienteId, hash, red,
+                     cantidad, monedaActivo,               // el activo que se movió
+                     valorCompra, monedaCompra, tasaCompra,
+                     valorVenta, monedaVenta, tasaVenta,   // dos tasas, no una
+                     gananciaCOP (calculada), estado, fechaOperacion
+
+Destinatario         id, empresaId, nombre, tipoDoc,
+                     numeroDocCifrado, numeroDocHash, numeroDocFinal,
+                     banco, tipoCuenta, cuentaCifrada, cuentaFinal, activo
+ReglaDispersion      id, empresaId, nombre, tipoReparto (porcentaje|montoFijo), activa
+ReglaDispersionDestino  id, empresaId, reglaId, destinatarioId,
+                     porcentaje?, montoFijo?, orden
+Dispersion           id, empresaId, operacionId, montoTotal, moneda, estado, reglaId?
+DispersionDestino    id, empresaId, dispersionId, destinatarioId?,
+                     nombreSnapshot, cuentaSnapshot,       // congelados al dispersar
+                     monto, porcentaje, estado, referenciaPago
 
 Egreso               id, empresaId, concepto, tipoIntangible, beneficiario,
                      monto, moneda, fecha
 OrdenPago            id, empresaId, egresoId, consecutivo (único por empresa),
-                     estado, pdfUrl, anuladaPor
+                     estado, contenido (snapshot de lo impreso),
+                     hashArchivo, claveArchivo?, anuladaPor, reemplazaAId?
 
 Empleado             id, empresaId, nombre, tipoDoc, numeroDoc, cargo,
                      salarioBase, fechaIngreso
@@ -164,7 +179,11 @@ AuditLog             id, usuarioId, empresaId, accion, entidad, entidadId,
                      valorAnterior, valorNuevo, ip, createdAt
 ```
 
-`Operacion.ganancia` se calcula y persiste al guardar, no se deriva en cada lectura.
+`Operacion.gananciaCOP` se calcula y persiste al guardar, no se deriva en cada lectura. Lleva **dos tasas** —compra y venta— porque en esa diferencia está el negocio: con una sola no se puede calcular la ganancia cuando compra y venta están en monedas distintas.
+
+Los documentos de identidad y los números de cuenta se guardan **cifrados**, con un HMAC determinista al lado para poder buscar sin descifrar, y los últimos cuatro dígitos en claro para mostrar. Es la regla 8 aplicada: ninguna pantalla devuelve el número completo.
+
+`OrdenPago.contenido` congela lo que decía el documento el día que se emitió —el emisor, el beneficiario, los montos— y el PDF se regenera desde ahí. Lo inmutable es el contenido, no los bytes: si mañana cambia la dirección de la empresa, una orden emitida el año pasado tiene que seguir diciendo lo mismo.
 
 `municipio` en `CalendarioTributario` solo aplica a ICA; para renta, retenciones y exógena va nulo.
 
@@ -293,27 +312,41 @@ Página pública, sin cuenta, en ruta separada de la intranet (por ejemplo `/tra
 
 Esto se usa ocho horas al día. La prioridad es velocidad de operación y densidad de información, no impacto visual.
 
-**Dirección definida: interfaz blanca, limpia, estilo fintech.** Referencias de producto: Mercury, Ramp, Brex, Stripe Dashboard. Mucho blanco, bordes finos en vez de sombras, jerarquía construida con espaciado y peso tipográfico, no con cajas de colores.
+**Dirección definida: interfaz clara, limpia, estilo fintech.** Referencias de producto: Mercury, Ramp, Brex, Stripe Dashboard. Bordes finos en vez de sombras, jerarquía construida con espaciado y peso tipográfico, no con cajas de colores.
 
-La identidad negro y dorado de Nexo vive en la landing pública, el logo y los PDF generados. Dentro de la aplicación el dorado aparece **solo como acento**: elemento activo en la barra lateral, foco de campos, botón primario, fila seleccionada. Nada de fondos negros ni paneles oscuros. **No implementes modo oscuro.**
+**El acento es azul, no dorado** (revisado 2026-08-22, ver «Cambios»). El dorado quedó reservado a los PDF generados y al logo. Dentro de la aplicación el azul aparece solo donde significa algo: elemento activo, foco de campos, botón primario. Nada de fondos negros ni paneles oscuros. **No implementes modo oscuro.**
+
+**Dos ritmos, un solo lenguaje.** La portada es una intranet —alguien llega en la mañana, quiere saber qué le toca y entrar a lo suyo en dos clics— y ahí manda el aire y la tipografía grande. Las pantallas de trabajo son un back-office y ahí manda la densidad: veinte filas por pantalla. Comparten paleta, tipografía y tarjetas; cambian el ritmo.
 
 **Tokens**
 
+Nombrados en español, como todo lo que se ve. La fuente de verdad es
+`apps/web/src/app/globals.css`; esta tabla es el resumen.
+
 ```
---bg            #FFFFFF   fondo de la aplicación
---surface       #FFFFFF   tarjetas y paneles
---surface-alt   #FAFAF9   encabezados de tabla, filas alternas, barra lateral
---border        #E7E5E4   bordes y divisores — hairline, 1px
---text          #1C1917   texto principal
---text-muted    #78716C   etiquetas, texto secundario, encabezados de columna
---gold          #C4922A   acento de marca, activo, foco, botón primario
---gold-soft     #FDF6E7   fila seleccionada, fondo de estado activo
---success       #15803D
---warning       #B45309
---danger        #B91C1C
+papel           #F4F5FB   fondo de la aplicación — con tinte, para que las
+                          tarjetas blancas floten sin necesidad de sombra
+superficie      #FFFFFF   tarjetas y paneles
+superficie-alt  #F5F6FC   encabezados de tabla, filas alternas, campos
+borde           #E4E6F2   bordes y divisores — hairline, 1px
+tinta           #101A47   texto principal
+grafito         #4A5378   texto secundario
+tenue           #6B7396   etiquetas y encabezados de columna (4,65:1 sobre blanco)
+acento          #1E40AF   activo, foco, botón primario
+decorativo      #7C83E8   el único color sin significado: formas de la portada.
+                          Si aparece en algo que se puede pulsar, está mal usado
+exito           #0F7A3D
+alerta          #B45309
+peligro         #D92D3E   coral, para «acción requerida» y anulaciones
 ```
 
-Radios contenidos (`4px` a `6px`). Sin sombras salvo en elementos flotantes reales (dropdown, panel lateral, modal), y ahí muy suaves.
+Radios contenidos en las pantallas de trabajo (`6px`–`12px`) y más generosos en la
+portada (`20px`). Sin sombras salvo en elementos flotantes reales (dropdown, panel
+lateral, modal), y ahí muy suaves.
+
+**Accesibilidad, no opcional:** contraste mínimo 4,5:1 en texto, `prefers-reduced-motion`
+respetado, enlace de salto al contenido, y el estado activo nunca dependiendo solo del
+color.
 
 **Tipografía**
 
@@ -324,24 +357,25 @@ Radios contenidos (`4px` a `6px`). Sin sombras salvo en elementos flotantes real
 **Layout**
 
 ```
-┌──────────┬────────────────────────────────────────┐
-│          │  [empresa ▾]      buscar ⌘K    [user] │
-│  NEXO    ├────────────────────────────────────────┤
-│          │  Operaciones                    [+ Nueva]│
-│ Operac.  │  ┌──────────────────────────────────┐  │
-│ Egresos  │  │ filtros · rango · estado         │  │
-│ Emplead. │  ├──────────────────────────────────┤  │
-│ Contab.  │  │ tabla densa, ordenable,          │  │
-│ Cumplim. │  │ paginada en servidor             │  │
-│ Clientes │  │                                  │  │
-│ Trámites │  └──────────────────────────────────┘  │
-│ Admin    │                                        │
-│          │                                        │
-└──────────┴────────────────────────────────────────┘
+┌────────────────────────────────────────────────────────────┐
+│ N Nexo   Operaciones Egresos Empleados …   [empresa ▾] 🔍 ●│
+├────────────────────────────────────────────────────────────┤
+│          Operaciones                          [+ Nueva]    │
+│          ┌────────────────────────────────────────┐        │
+│          │ buscar · pastillas de estado           │        │
+│          ├────────────────────────────────────────┤        │
+│          │ tabla densa, ordenable,                │        │
+│          │ paginada en servidor                   │        │
+│          └────────────────────────────────────────┘        │
+└────────────────────────────────────────────────────────────┘
 ```
 
-- Barra lateral fija, colapsable, con los módulos que el usuario tiene permitidos. Los que no tiene, no aparecen.
-- Selector de empresa administrada en la barra superior (decisión #1).
+- **Sin barra lateral** (revisado 2026-08-22, ver «Cambios»). La navegación vive en el
+  encabezado, con los módulos que el usuario tiene permitidos; los que no tiene, no
+  aparecen. Un módulo que existe pero cuya etapa aún no llegó dice en qué etapa llega,
+  en vez de dar 404.
+- Selector de empresa administrada en el encabezado (decisión #1).
+- Administración va en el menú de la cuenta, separada del trabajo diario.
 - **Command palette (⌘K)** con búsqueda global. Pegar un hash ahí debe llevar directo a la operación. Es la función que más van a usar.
 - Detalles en panel lateral deslizante, no en página nueva — así no se pierde el contexto de la tabla.
 - Tablas: paginación y ordenamiento en servidor, columnas configurables, selección múltiple para acciones en lote, exportación de lo filtrado.
@@ -362,7 +396,7 @@ Radios contenidos (`4px` a `6px`). Sin sombras salvo en elementos flotantes real
 
 - Fondos oscuros o paneles negros en cualquier parte de la aplicación
 - Modo oscuro
-- Dorado usado como fondo de secciones grandes — es acento, no relleno
+- El acento usado como fondo de secciones grandes — es acento, no relleno
 - Tarjetas con sombras grandes y bordes muy redondeados por defecto de Tailwind
 - Gráficas decorativas que no responden una pregunta concreta
 - Animaciones de entrada en tablas y listas
@@ -421,3 +455,46 @@ Cada módulo se considera listo cuando:
 Antes de escribir código: propón el esquema Prisma del módulo y las rutas de la API, y espera confirmación. Los cambios de esquema a mitad de camino son el mayor costo de este proyecto.
 
 Cuando encuentres una ambigüedad, no la resuelvas en silencio: implementa la opción más conservadora, déjala aislada y marca `TODO [CONFIRMAR]` con la pregunta concreta.
+
+---
+
+## 11. Cambios sobre la versión original
+
+El brief original se redactó antes de construir. Estas son las diferencias con lo que
+existe hoy, y por qué. Sirve para que nadie construya contra una versión vieja.
+
+### Decisiones de la clienta
+
+| Qué cambió          | Antes                           | Ahora                                                            | Motivo                                                                                                                     |
+| ------------------- | ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| **Color de acento** | Dorado `#C4922A`                | Azul `#1E40AF`                                                   | A la clienta no le gustó el dorado en la interfaz. El dorado se queda en los PDF y el logo                                 |
+| **Barra lateral**   | Fija a la izquierda, colapsable | No hay: la navegación está en el encabezado                      | Duplicaba el mosaico de módulos de la portada y se comía 200 px de ancho en pantallas que son, sobre todo, tablas          |
+| **Portada**         | No estaba definida              | Saludo, buscador y mosaico de módulos, con más aire que el resto | La clienta pidió un estilo de intranet tipo ShortPoint para el inicio, conservando la densidad en las pantallas de trabajo |
+
+### Correcciones técnicas
+
+| Qué cambió                                                                       | Motivo                                                                                                                                                                                              |
+| -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **`Operacion` lleva dos tasas** (`tasaCompra`, `tasaVenta`), no una              | Con una sola no se puede calcular la ganancia cuando compra y venta están en monedas distintas — y en esa diferencia está el negocio                                                                |
+| **`Operacion` gana `cantidad` y `monedaActivo`**                                 | Sin la cantidad de cripto no se puede reconstruir la operación ni atarla al hash de la cadena. Van opcionales para no cerrar puertas                                                                |
+| **Documentos y cuentas van cifrados** con HMAC al lado y últimos cuatro en claro | El modelo original tenía `numeroDoc` en texto plano, lo que contradecía su propia regla 8                                                                                                           |
+| **Aparecen `Destinatario`, `ReglaDispersion` y `ReglaDispersionDestino`**        | El modelo original tenía el destinatario como texto suelto dentro de la dispersión. Sin catálogo no hay forma de repetir un reparto ni de validar que cuadre                                        |
+| **`OrdenPago` guarda `contenido`, no `pdfUrl`**                                  | Lo inmutable de un documento legal es lo que decía, no los bytes. Ver `docs/ETAPA-03.md` §1.1                                                                                                       |
+| **Los documentos legales no llevan `deletedAt`** — excepción a la regla 4        | Un consecutivo con huecos no se le puede explicar a nadie                                                                                                                                           |
+| **Componentes propios sobre Radix**, no shadcn/ui                                | shadcn/ui copia código al proyecto y trae su propio sistema de tokens en inglés. Con un sistema de diseño propio en español, adaptarlo salía más caro que escribir los seis componentes que se usan |
+| **Partner-Id de Siigo es de Nexo**, no de cada empresa                           | El texto y la tabla del modelo se contradecían                                                                                                                                                      |
+
+### Lo que el brief pide y todavía no existe
+
+No son errores del brief: son trabajo pendiente. Se listan para que no se den por hechos.
+
+- Tablas: columnas configurables, selección múltiple para acciones en lote y exportación
+  de lo filtrado
+- Formularios largos en pasos, con guardado de borrador
+- Actualización optimista con reversión, y toast con opción de deshacer
+- Atajos de teclado con modal de ayuda
+- En móvil, las tablas pasando a tarjetas
+- El módulo **Trámites de Firmas** no está en el enum `MODULOS`; entra en la etapa 8
+- **Clientes** se adelantó en versión mínima a la etapa 2, porque una operación cuelga
+  de un cliente. Su versión completa —portafolio, historial, calendario— sigue en la
+  etapa 4
