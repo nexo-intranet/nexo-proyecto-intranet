@@ -76,13 +76,22 @@ async function reenviar(peticion: NextRequest, segmentos: string[]): Promise<Nex
     );
   }
 
-  const cuerpo = await respuestaApi.text();
-  const respuesta = new NextResponse(cuerpo || null, {
+  // Binario, no texto. Leer con `text()` decodifica como UTF-8, y eso destruye un
+  // PDF sin avisar: el archivo se descarga y no abre. Un ArrayBuffer sirve igual
+  // para JSON y para documentos.
+  const cuerpo = await respuestaApi.arrayBuffer();
+
+  const respuesta = new NextResponse(cuerpo.byteLength > 0 ? cuerpo : null, {
     status: respuestaApi.status,
     headers: {
       'content-type': respuestaApi.headers.get('content-type') ?? 'application/json',
     },
   });
+
+  // Sin esto el navegador guardaría el PDF con el nombre de la ruta en vez del
+  // consecutivo del documento.
+  const disposicion = respuestaApi.headers.get('content-disposition');
+  if (disposicion) respuesta.headers.set('content-disposition', disposicion);
 
   // Las cookies de sesión llegan del API y hay que reemitirlas tal cual; pueden
   // ser varias, así que no sirve `set`.
