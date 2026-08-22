@@ -1,6 +1,7 @@
 import { z } from 'zod';
 import {
   anulacionEsquema,
+  booleanoEsquema,
   emailEsquema,
   idEsquema,
   paginacionEsquema,
@@ -65,7 +66,7 @@ export const actualizarEmpleadoEsquema = crearEmpleadoEsquema
 export type DatosActualizarEmpleado = z.infer<typeof actualizarEmpleadoEsquema>;
 
 export const filtroEmpleadosEsquema = paginacionEsquema.extend({
-  activo: z.coerce.boolean().optional(),
+  activo: booleanoEsquema.optional(),
   tipoContrato: tipoContratoEsquema.optional(),
 });
 export type FiltroEmpleados = z.infer<typeof filtroEmpleadosEsquema>;

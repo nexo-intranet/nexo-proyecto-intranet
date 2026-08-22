@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { emailEsquema, idEsquema, paginacionEsquema, textoRequerido } from './comunes.js';
+import {
+  booleanoEsquema,
+  emailEsquema,
+  idEsquema,
+  paginacionEsquema,
+  textoRequerido,
+} from './comunes.js';
 import { tipoContribuyenteEsquema, tipoDocumentoEsquema } from '../enums/index.js';
 import { soloDigitos } from '../utilidades/nit.js';
 
@@ -68,7 +74,7 @@ export type DatosActualizarCliente = z.infer<typeof actualizarClienteEsquema>;
 
 export const filtroClientesEsquema = paginacionEsquema.extend({
   tipo: tipoClienteEsquema.optional(),
-  activo: z.coerce.boolean().optional(),
+  activo: booleanoEsquema.optional(),
 });
 export type FiltroClientes = z.infer<typeof filtroClientesEsquema>;
 

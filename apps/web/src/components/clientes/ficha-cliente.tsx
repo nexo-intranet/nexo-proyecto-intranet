@@ -2,12 +2,14 @@
 
 import {
   ETIQUETA_ESTADO_OPERACION,
+  ETIQUETA_TIPO_OBLIGACION,
   ETIQUETA_TIPO_CLIENTE,
   ETIQUETA_TIPO_CONTRIBUYENTE,
   ETIQUETA_TIPO_DOCUMENTO,
   abreviarHash,
   formatear,
   type Cliente,
+  type FechaCalendario,
   type OperacionResumen,
   type RespuestaPaginada,
   type ResumenCliente,
@@ -34,7 +36,7 @@ export function FichaCliente({
   cliente: Cliente;
   empresaId: string | null;
 }) {
-  const [pestana, setPestana] = useState<'datos' | 'operaciones'>('datos');
+  const [pestana, setPestana] = useState<'datos' | 'operaciones' | 'calendario'>('datos');
 
   const { data: resumen } = useQuery({
     queryKey: ['cliente-resumen', cliente.id, empresaId],
@@ -63,12 +65,17 @@ export function FichaCliente({
         <Pestana activa={pestana === 'operaciones'} onClick={() => setPestana('operaciones')}>
           Operaciones
         </Pestana>
+        <Pestana activa={pestana === 'calendario'} onClick={() => setPestana('calendario')}>
+          Calendario
+        </Pestana>
       </div>
 
       {pestana === 'datos' ? (
         <Datos cliente={cliente} />
-      ) : (
+      ) : pestana === 'operaciones' ? (
         <Operaciones clienteId={cliente.id} empresaId={empresaId} />
+      ) : (
+        <Calendario cliente={cliente} empresaId={empresaId} />
       )}
     </div>
   );
@@ -106,18 +113,7 @@ function Datos({ cliente }: { cliente: Cliente }) {
         ))}
       </dl>
 
-      {/* El calendario llega en la etapa 6, con la tabla que un administrador carga
-          una vez al año. Se deja dicho en vez de mostrar una sección vacía. */}
-      <div className="mt-5 flex items-start gap-3 rounded-md border border-borde bg-superficie-alt px-3.5 py-3">
-        <CalendarClock className="mt-0.5 size-4 shrink-0 text-decorativo" aria-hidden />
-        <p className="text-[12px] leading-relaxed text-grafito">
-          <strong className="font-semibold text-tinta">Calendario tributario</strong> — llega en la
-          etapa 6, junto con Contabilidad. Se calcula con el último dígito del NIT, el tipo de
-          contribuyente y el municipio, que ya se están guardando aquí.
-        </p>
-      </div>
-
-      <p className="mt-3 rounded-sm border border-borde bg-superficie-alt px-3 py-2.5 text-[12px] leading-relaxed text-grafito">
+      <p className="mt-5 rounded-sm border border-borde bg-superficie-alt px-3 py-2.5 text-[12px] leading-relaxed text-grafito">
         El número de documento se guarda cifrado y no sale del servidor completo. Buscarlo compara
         un HMAC: la tabla nunca se descifra para encontrar a alguien.
       </p>
@@ -186,6 +182,87 @@ function Operaciones({ clienteId, empresaId }: { clienteId: string; empresaId: s
           <span className="cifra">{data.total}</span>.
         </p>
       )}
+    </>
+  );
+}
+
+/**
+ * El calendario tributario de este cliente.
+ *
+ * No se guarda ninguna fecha asignada a nadie: se le pregunta a Contabilidad, que
+ * cruza el último dígito del NIT, el tipo de contribuyente y —para el ICA— el
+ * municipio. Copiar aquí la regla del cruce habría sido más rápido y habría dejado
+ * dos verdades que se separan el día que la DIAN cambie una.
+ */
+function Calendario({ cliente, empresaId }: { cliente: Cliente; empresaId: string | null }) {
+  const anio = new Date().getFullYear();
+
+  const { data, isLoading } = useQuery({
+    queryKey: ['cliente-calendario', cliente.id, empresaId, anio],
+    enabled: cliente.ultimoDigitoNit !== null,
+    queryFn: () =>
+      peticion<FechaCalendario[]>(`clientes/${cliente.id}/calendario?anio=${anio}`, { empresaId }),
+  });
+
+  if (cliente.ultimoDigitoNit === null) {
+    return (
+      <p className="rounded-md border border-dashed border-borde px-4 py-8 text-center text-[13px] leading-relaxed text-tenue">
+        Este cliente no tiene NIT, y el calendario de la DIAN se reparte por su último dígito. Sin
+        ese dato no hay fechas que mostrar —mejor eso que inventar unas.
+      </p>
+    );
+  }
+
+  if (isLoading) return <Esqueleto className="h-40 rounded-md" />;
+
+  if (!data || data.length === 0) {
+    return (
+      <div className="rounded-md border border-dashed border-borde px-4 py-8 text-center">
+        <CalendarClock className="mx-auto size-5 text-tenue" aria-hidden />
+        <p className="mt-2 text-[13px] leading-relaxed text-tenue">
+          No hay un calendario cargado para {anio}. Un administrador lo sube una vez al año desde
+          Contabilidad.
+        </p>
+      </div>
+    );
+  }
+
+  return (
+    <>
+      <ul className="divide-y divide-borde-suave overflow-hidden rounded-sm border border-borde bg-superficie">
+        {data.map((fecha) => {
+          const vencida = fecha.diasRestantes < 0;
+          const cerca = !vencida && fecha.diasRestantes <= 15;
+
+          return (
+            <li key={fecha.id} className="flex items-center justify-between gap-3 px-3 py-2.5">
+              <span className="min-w-0">
+                <span className="block truncate text-[13px] text-tinta">
+                  {ETIQUETA_TIPO_OBLIGACION[fecha.tipoObligacion]}
+                </span>
+                <span className="cifra text-[11px] text-tenue">
+                  {formatearFecha(fecha.fechaLimite)}
+                </span>
+              </span>
+
+              {vencida ? (
+                <Distintivo tono="neutro">Ya pasó</Distintivo>
+              ) : (
+                <Distintivo tono={cerca ? 'alerta' : 'neutro'} punto={cerca}>
+                  {fecha.diasRestantes === 0 ? 'Hoy' : `${fecha.diasRestantes} días`}
+                </Distintivo>
+              )}
+            </li>
+          );
+        })}
+      </ul>
+
+      <p className="mt-2 text-[12px] leading-relaxed text-tenue">
+        Se calcula con el último dígito <span className="cifra">{cliente.ultimoDigitoNit}</span>
+        {cliente.tipoContribuyente ? ', su tipo de contribuyente' : ''}
+        {cliente.codigoDaneMunicipio ? ' y su municipio' : ''}. Las fechas las mantiene
+        Contabilidad.
+      </p>
     </>
   );
 }

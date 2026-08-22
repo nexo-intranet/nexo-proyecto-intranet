@@ -230,3 +230,50 @@ export async function descargarArchivo(
     URL.revokeObjectURL(url);
   }
 }
+
+/**
+ * Sube un archivo.
+ *
+ * Va aparte de `peticion` porque el cuerpo es `multipart/form-data` y **no se
+ * declara el `content-type`**: lo pone el navegador con el `boundary` que él mismo
+ * genera. Escribirlo a mano produce un cuerpo que el servidor no sabe partir.
+ *
+ * Lo demás es igual: la empresa activa, el token CSRF leído en cada envío y la
+ * renovación silenciosa de la sesión. Sin ella, subir un soporte justo cuando
+ * caduca el token de acceso fallaría después de que la persona ya eligió el
+ * archivo, que es el peor momento posible.
+ */
+export async function subirArchivo<T>(
+  ruta: string,
+  archivo: File,
+  empresaId: string | null,
+  /** Nombre del campo del formulario. El API espera «archivo». */
+  campo = 'archivo',
+): Promise<T> {
+  const pedir = () => {
+    const encabezados: Record<string, string> = {};
+    if (empresaId) encabezados[HEADER_EMPRESA] = empresaId;
+
+    const csrf = tokenCsrf();
+    if (csrf) encabezados[HEADER_CSRF] = csrf;
+
+    const cuerpo = new FormData();
+    cuerpo.append(campo, archivo);
+
+    return fetch(`/api/${ruta.replace(/^\//, '')}`, {
+      method: 'POST',
+      headers: encabezados,
+      body: cuerpo,
+      credentials: 'same-origin',
+    });
+  };
+
+  let resultado = await leer<T>(await pedir());
+
+  if (resultado.error && RENOVABLES.has(resultado.error.codigo) && (await renovarSesion())) {
+    resultado = await leer<T>(await pedir());
+  }
+
+  if (resultado.error) throw resultado.error;
+  return resultado.datos;
+}

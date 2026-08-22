@@ -54,12 +54,18 @@ async function reenviar(peticion: NextRequest, segmentos: string[]): Promise<Nex
 
   const tieneCuerpo = !['GET', 'HEAD'].includes(peticion.method);
 
+  // Igual que en la respuesta: **binario, no texto**. Un `text()` aquí decodifica
+  // como UTF-8 y corrompe cualquier archivo que se suba —un PDF llegaría al API con
+  // los bytes cambiados y lo rechazaría la validación por firma, sin que nada
+  // explique por qué—. Un ArrayBuffer sirve igual para JSON y para multipart.
+  const cuerpoEnviado = tieneCuerpo ? await peticion.arrayBuffer() : undefined;
+
   let respuestaApi: Response;
   try {
     respuestaApi = await fetch(destino, {
       method: peticion.method,
       headers: encabezados,
-      body: tieneCuerpo ? await peticion.text() : undefined,
+      body: cuerpoEnviado,
       redirect: 'manual',
       cache: 'no-store',
     });

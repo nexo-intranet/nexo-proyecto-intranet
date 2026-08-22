@@ -1,5 +1,5 @@
 import { z } from 'zod';
-import { idEsquema, paginacionEsquema, textoRequerido } from './comunes.js';
+import { booleanoEsquema, idEsquema, paginacionEsquema, textoRequerido } from './comunes.js';
 import { tipoDocumentoEsquema, monedaEsquema } from '../enums/index.js';
 import { dineroEsquema, dineroPositivoEsquema } from '../dinero/index.js';
 import { numeroDocumentoEsquema } from './cliente.js';
@@ -57,7 +57,7 @@ export const actualizarDestinatarioEsquema = crearDestinatarioEsquema
 export type DatosActualizarDestinatario = z.infer<typeof actualizarDestinatarioEsquema>;
 
 export const filtroDestinatariosEsquema = paginacionEsquema.extend({
-  activo: z.coerce.boolean().optional(),
+  activo: booleanoEsquema.optional(),
 });
 
 export interface Destinatario {

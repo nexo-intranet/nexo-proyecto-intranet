@@ -1,6 +1,6 @@
 # Etapa 6 — Contabilidad · Esquema y API
 
-> **6a en construcción (2026-08-22). 6b aplazada, 6c en espera.**
+> **6a terminada (2026-08-22). 6b aplazada, 6c en espera.**
 > La 6b —facturación con Siigo— queda **pendiente por decisión de la clienta**: depende
 > de que el proveedor entregue credenciales y no tiene sentido bloquear el avance
 > esperándolas. Se retoma cuando lleguen. La 6c depende de la 6b, así que espera con ella.
@@ -244,7 +244,12 @@ decisiones sobre un API que todavía no hemos visto responder.
 2. Un archivo con extensión `.pdf` pero contenido de otra cosa se rechaza.
 3. Consultar el calendario de un cliente devuelve sus fechas según su último dígito,
    su tipo de contribuyente y —para ICA— su municipio.
-4. Cargar el Excel de un año muestra qué va a cambiar **antes** de aplicarlo.
+4. Cargar el calendario de un año muestra qué va a cambiar **antes** de aplicarlo.
+   Se carga en **CSV** —«Guardar como» desde Excel— y no en `.xlsx`: leer el formato
+   binario de Excel en el navegador cuesta una librería de cientos de kilobytes, y lo
+   que ahorra es un paso de menú. La lectura del archivo vive en `packages/shared`,
+   con pruebas, porque una fila mal interpretada se convierte en una declaración
+   presentada tarde.
 5. La ficha del cliente muestra su calendario, consultando a Contabilidad y sin
    duplicar la regla.
 6. Un gasto de otra empresa responde `404` aunque se fuerce el id.

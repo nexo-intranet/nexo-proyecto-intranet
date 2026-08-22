@@ -15,3 +15,4 @@ export * from './utilidades/nit.js';
 export * from './dispersion/index.js';
 export * from './operaciones/index.js';
 export * from './nomina/index.js';
+export * from './calendario/index.js';

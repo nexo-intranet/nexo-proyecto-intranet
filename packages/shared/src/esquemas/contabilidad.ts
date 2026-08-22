@@ -1,5 +1,11 @@
 import { z } from 'zod';
-import { idEsquema, paginacionEsquema, rangoFechasEsquema, textoRequerido } from './comunes.js';
+import {
+  booleanoEsquema,
+  idEsquema,
+  paginacionEsquema,
+  rangoFechasEsquema,
+  textoRequerido,
+} from './comunes.js';
 import { monedaEsquema, tipoContribuyenteEsquema, type Moneda } from '../enums/index.js';
 import { dineroEsquema, dineroPositivoEsquema } from '../dinero/index.js';
 
@@ -41,7 +47,7 @@ const gastoBase = z.object({
   tasaCambio: dineroEsquema.optional(),
 
   fecha: z.coerce.date(),
-  deducible: z.coerce.boolean().default(true),
+  deducible: booleanoEsquema.default(true),
 });
 
 /** Si el gasto no está en pesos, su tasa es obligatoria. */
@@ -64,8 +70,8 @@ export type DatosActualizarGasto = z.infer<typeof actualizarGastoEsquema>;
 export const filtroGastosEsquema = paginacionEsquema
   .extend({
     categoria: categoriaGastoEsquema.optional(),
-    deducible: z.coerce.boolean().optional(),
-    conSoporte: z.coerce.boolean().optional(),
+    deducible: booleanoEsquema.optional(),
+    conSoporte: booleanoEsquema.optional(),
   })
   .and(rangoFechasEsquema);
 export type FiltroGastos = z.infer<typeof filtroGastosEsquema>;

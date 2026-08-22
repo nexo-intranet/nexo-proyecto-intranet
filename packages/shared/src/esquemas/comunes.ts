@@ -23,6 +23,23 @@ export const emailEsquema = z
   .email('El correo no tiene un formato válido')
   .max(254);
 
+/**
+ * Un booleano que llega en una URL.
+ *
+ * `z.coerce.boolean()` **no sirve** para esto y falla de la peor manera: en
+ * JavaScript `Boolean('false')` es `true`, porque toda cadena no vacía es
+ * verdadera. Un filtro `?activo=false` entraba al servidor como `true` y devolvía
+ * exactamente lo contrario de lo que se pidió, sin error, sin registro y sin nada
+ * que le dijera a nadie que la lista estaba al revés.
+ *
+ * Aquí se lee el texto, que es lo que de verdad llega. Se aceptan también booleanos
+ * de verdad porque el mismo esquema se usa con cuerpos JSON, donde `false` sí es
+ * `false`.
+ */
+export const booleanoEsquema = z
+  .union([z.boolean(), z.enum(['true', 'false', '1', '0'])])
+  .transform((valor) => valor === true || valor === 'true' || valor === '1');
+
 export const MAX_POR_PAGINA = 200;
 
 export const paginacionEsquema = z.object({

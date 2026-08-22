@@ -288,6 +288,24 @@ describe('Contabilidad 6a, de punta a punta', () => {
       expect(respuesta.body.sinSoporte).toBe(1);
     });
 
+    /**
+     * El filtro que devolvia lo contrario de lo pedido.
+     *
+     * `z.coerce.boolean()` convierte la cadena `'false'` en `true`, asi que
+     * `?conSoporte=false` listaba justo los gastos que si tenian soporte. Se prueba
+     * por HTTP y no en el esquema porque el error solo existe cuando el valor llega
+     * como texto en una URL.
+     */
+    it('el filtro «sin soporte» devuelve los que no tienen, no los que si', async () => {
+      const sinSoporte = await get('/gastos?conSoporte=false').expect(200);
+      expect(sinSoporte.body.total).toBe(1);
+      expect(sinSoporte.body.datos[0].soporte).toBeNull();
+
+      const conSoporte = await get('/gastos?conSoporte=true').expect(200);
+      expect(conSoporte.body.total).toBe(1);
+      expect(conSoporte.body.datos[0].soporte).not.toBeNull();
+    });
+
     it('un gasto de otra empresa responde como si no existiera', async () => {
       const ajeno = await comoDueno((cliente) =>
         cliente.query<{ id: string }>(
