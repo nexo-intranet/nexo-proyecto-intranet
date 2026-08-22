@@ -6,6 +6,7 @@ import {
   formatear,
   type DispersionVista,
   type OperacionDetalle,
+  type ReglaVista,
   type RepartoCalculado,
   type RespuestaPaginada,
 } from '@nexo/shared';
@@ -39,13 +40,6 @@ type DestinoPrevisto = RepartoCalculado['destinos'][number] & {
 // `Omit` y no una intersección: al intersecar, TypeScript se queda con el tipo de
 // `destinos` del primer miembro y los campos añadidos desaparecen al indexar.
 type Previsualizacion = Omit<RepartoCalculado, 'destinos'> & { destinos: DestinoPrevisto[] };
-
-interface ReglaListada {
-  id: string;
-  nombre: string;
-  tipoReparto: 'PORCENTAJE' | 'MONTO_FIJO';
-  activa: boolean;
-}
 
 export function DetalleOperacion({
   operacionId,
@@ -267,7 +261,7 @@ function CrearDispersion({
     queryKey: ['reglas-dispersion', empresaId],
     enabled: Boolean(empresaId),
     queryFn: () =>
-      peticion<RespuestaPaginada<ReglaListada>>('reglas-dispersion?porPagina=100', { empresaId }),
+      peticion<RespuestaPaginada<ReglaVista>>('reglas-dispersion?porPagina=100', { empresaId }),
   });
 
   const previsualizar = useMutation({

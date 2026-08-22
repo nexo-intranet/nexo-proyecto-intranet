@@ -15,11 +15,12 @@ import {
   paginacionEsquema,
   type DatosGuardarRegla,
   type ParametrosPaginacion,
+  type ReglaVista,
   type RespuestaPaginada,
 } from '@nexo/shared';
 import { Auditar, Permiso } from '../../common/decoradores';
 import { zod } from '../../common/pipes/zod-validation.pipe';
-import { ReglasService, type ReglaVista } from './reglas.service';
+import { ReglasService } from './reglas.service';
 
 /**
  * `PUT` y no `PATCH`: una regla se guarda entera, con todos sus destinos. Media

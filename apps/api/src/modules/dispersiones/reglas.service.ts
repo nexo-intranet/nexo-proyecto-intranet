@@ -4,27 +4,13 @@ import {
   calcularReparto,
   type DatosGuardarRegla,
   type ParametrosPaginacion,
+  type ReglaVista,
   type RespuestaPaginada,
 } from '@nexo/shared';
 import { conflicto, noEncontrado } from '../../common/errores';
 import { AuditService } from '../../core/audit/audit.service';
 import { conEmpresaImplicita } from '../../core/prisma/empresa-implicita';
 import { PrismaService } from '../../core/prisma/prisma.service';
-
-export interface ReglaVista {
-  id: string;
-  nombre: string;
-  tipoReparto: 'PORCENTAJE' | 'MONTO_FIJO';
-  activa: boolean;
-  destinos: {
-    destinatarioId: string;
-    nombre: string;
-    cuentaFinal: string | null;
-    porcentaje: string | null;
-    montoFijo: string | null;
-    orden: number;
-  }[];
-}
 
 /**
  * Reglas de dispersión: el reparto que se repite operación tras operación.

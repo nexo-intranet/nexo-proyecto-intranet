@@ -195,6 +195,23 @@ export const revertirDestinoEsquema = z.object({
 });
 export type DatosRevertirDestino = z.infer<typeof revertirDestinoEsquema>;
 
+export interface ReglaDestinoVista {
+  destinatarioId: string;
+  nombre: string;
+  cuentaFinal: string | null;
+  porcentaje: string | null;
+  montoFijo: string | null;
+  orden: number;
+}
+
+export interface ReglaVista {
+  id: string;
+  nombre: string;
+  tipoReparto: TipoReparto;
+  activa: boolean;
+  destinos: ReglaDestinoVista[];
+}
+
 export const filtroDispersionesEsquema = paginacionEsquema.extend({
   estado: estadoDispersionEsquema.optional(),
 });

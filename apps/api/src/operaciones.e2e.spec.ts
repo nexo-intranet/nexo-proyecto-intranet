@@ -554,5 +554,27 @@ describe('Operaciones y dispersión, de punta a punta', () => {
       expect(respuesta.body.red).toBeNull();
       expect(respuesta.body.dispersion).toBeNull();
     });
+
+    /**
+     * El formulario de reglas manda `porcentaje` u `montoFijo`, nunca los dos, y
+     * omite el que no aplica en vez de mandarlo vacío. Nada probaba el camino de
+     * monto fijo hasta ahora.
+     */
+    it('guarda una regla por monto fijo sin porcentajes', async () => {
+      const respuesta = await post('/reglas-dispersion', {
+        nombre: 'Comisión fija del gestor',
+        tipoReparto: 'MONTO_FIJO',
+        activa: true,
+        destinos: [
+          { destinatarioId: destinoAId, montoFijo: '150000.00', orden: 0 },
+          { destinatarioId: destinoBId, montoFijo: '50000.00', orden: 1 },
+        ],
+      }).expect(201);
+
+      expect(respuesta.body.tipoReparto).toBe('MONTO_FIJO');
+      expect(respuesta.body.destinos).toHaveLength(2);
+      expect(respuesta.body.destinos[0].montoFijo).toBe('150000.00');
+      expect(respuesta.body.destinos[0].porcentaje).toBeNull();
+    });
   });
 });
