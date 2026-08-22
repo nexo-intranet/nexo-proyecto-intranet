@@ -314,7 +314,14 @@ Esto se usa ocho horas al día. La prioridad es velocidad de operación y densid
 
 **Dirección definida: interfaz clara, limpia, estilo fintech.** Referencias de producto: Mercury, Ramp, Brex, Stripe Dashboard. Bordes finos en vez de sombras, jerarquía construida con espaciado y peso tipográfico, no con cajas de colores.
 
-**El acento es azul, no dorado** (revisado 2026-08-22, ver «Cambios»). El dorado quedó reservado a los PDF generados y al logo. Dentro de la aplicación el azul aparece solo donde significa algo: elemento activo, foco de campos, botón primario. Nada de fondos negros ni paneles oscuros. **No implementes modo oscuro.**
+**Dos familias de color, cada una con su oficio** (revisado 2026-08-22, ver «Cambios»):
+
+- **Azul — lo funcional.** Botón primario, foco, elemento activo, enlace. Si algo se puede pulsar, es azul.
+- **Dorado — la identidad.** El dorado del logo, en fondos muy sutiles, filetes y sellos. Nunca sobre algo que se pueda pulsar: ahí competiría con el azul y ninguno de los dos significaría nada.
+
+El dorado no puede ser el color de lo accionable porque sobre blanco tiene mal contraste, y para arreglarlo hay que oscurecerlo tanto que deja de parecerse al logo.
+
+**Hay modo oscuro**, a petición del cliente. Tres estados: claro, oscuro y seguir al sistema. No es una inversión de los colores claros — los oscuros bajan de saturación y el azul **sube** de luminosidad, porque el azul de estilógrafo sobre negro no se lee.
 
 **Dos ritmos, un solo lenguaje.** La portada es una intranet —alguien llega en la mañana, quiere saber qué le toca y entrar a lo suyo en dos clics— y ahí manda el aire y la tipografía grande. Las pantallas de trabajo son un back-office y ahí manda la densidad: veinte filas por pantalla. Comparten paleta, tipografía y tarjetas; cambian el ritmo.
 
@@ -324,21 +331,25 @@ Nombrados en español, como todo lo que se ve. La fuente de verdad es
 `apps/web/src/app/globals.css`; esta tabla es el resumen.
 
 ```
-papel           #F4F5FB   fondo de la aplicación — con tinte, para que las
-                          tarjetas blancas floten sin necesidad de sombra
-superficie      #FFFFFF   tarjetas y paneles
-superficie-alt  #F5F6FC   encabezados de tabla, filas alternas, campos
-borde           #E4E6F2   bordes y divisores — hairline, 1px
-tinta           #101A47   texto principal
-grafito         #4A5378   texto secundario
-tenue           #6B7396   etiquetas y encabezados de columna (4,65:1 sobre blanco)
-acento          #1E40AF   activo, foco, botón primario
-decorativo      #7C83E8   el único color sin significado: formas de la portada.
-                          Si aparece en algo que se puede pulsar, está mal usado
-exito           #0F7A3D
-alerta          #B45309
-peligro         #D92D3E   coral, para «acción requerida» y anulaciones
+                CLARO      OSCURO
+papel           #F6F7F9    #0B0D12   fondo de la aplicación
+superficie      #FFFFFF    #14171F   tarjetas y paneles
+superficie-alt  #F3F4F6    #1B1F29   encabezados de tabla, filas alternas, campos
+borde           #E4E6EB    #262B37   bordes y divisores — hairline, 1px
+tinta           #111827    #E8EAF0   texto principal
+grafito         #4B5563    #B0B7C6   texto secundario
+tenue           #6B7280    #8A91A6   etiquetas y encabezados de columna
+acento          #1E40AF    #6B95F7   lo funcional: activo, foco, botón primario
+marca           #C8912E    #D9A441   la identidad: dorado del logo, en sutil
+sobre-acento    #FFFFFF    #0B0D12   texto encima de un fondo de color
+exito           #0F7A3D    #4ADE80
+alerta          #B45309    #FBBF24
+peligro         #D92D3E    #F87171
 ```
+
+Los grises son **neutros**, ni fríos ni cálidos: es lo que permite que el azul y el dorado convivan sin que uno de los dos se vea sucio.
+
+`sobre-acento` existe porque `superficie` cambia con el tema y el texto de un botón azul no: es blanco en claro y oscuro en el tema oscuro, donde el azul se aclara.
 
 Radios contenidos en las pantallas de trabajo (`6px`–`12px`) y más generosos en la
 portada (`20px`). Sin sombras salvo en elementos flotantes reales (dropdown, panel
@@ -357,24 +368,31 @@ color.
 **Layout**
 
 ```
-┌────────────────────────────────────────────────────────────┐
-│ N Nexo   Operaciones Egresos Empleados …   [empresa ▾] 🔍 ●│
-├────────────────────────────────────────────────────────────┤
-│          Operaciones                          [+ Nueva]    │
-│          ┌────────────────────────────────────────┐        │
-│          │ buscar · pastillas de estado           │        │
-│          ├────────────────────────────────────────┤        │
-│          │ tabla densa, ordenable,                │        │
-│          │ paginada en servidor                   │        │
-│          └────────────────────────────────────────┘        │
-└────────────────────────────────────────────────────────────┘
+┌────────────┬───────────────────────────────────────────────┐
+│ ◆ Nexo     │ [empresa ▾]        buscar ⌘K    ☀ ● usuario  │
+│            ├───────────────────────────────────────────────┤
+│ Inicio     │  Operaciones                       [+ Nueva]  │
+│            │  ┌─────────────────────────────────────────┐  │
+│ MÓDULOS    │  │ buscar · pastillas de estado            │  │
+│ Operaciones│  ├─────────────────────────────────────────┤  │
+│ Egresos    │  │ tabla densa, ordenable,                 │  │
+│ Empleados  │  │ paginada en servidor                    │  │
+│ Contab.    │  │                                         │  │
+│ Cumplim.   │  └─────────────────────────────────────────┘  │
+│ Clientes   │                                               │
+│            │                                               │
+│ ‹ Plegar   │                                               │
+└────────────┴───────────────────────────────────────────────┘
 ```
 
-- **Sin barra lateral** (revisado 2026-08-22, ver «Cambios»). La navegación vive en el
-  encabezado, con los módulos que el usuario tiene permitidos; los que no tiene, no
-  aparecen. Un módulo que existe pero cuya etapa aún no llegó dice en qué etapa llega,
-  en vez de dar 404.
-- Selector de empresa administrada en el encabezado (decisión #1).
+- **Barra lateral colapsable.** Abierta muestra los nombres; plegada deja solo los
+  iconos y devuelve 148 de sus 212 px, que es lo que pesa en una pantalla de tablas
+  densas. La elección se recuerda. Los módulos van agrupados —lo que se opera y lo que
+  se configura— porque una lista plana obliga a leerla entera para encontrar una entrada.
+- Solo aparecen los módulos que el usuario tiene permitidos. Un módulo que existe pero
+  cuya etapa aún no llegó dice en qué etapa llega, en vez de dar 404.
+- La barra superior lleva lo que **acompaña** al trabajo sin dirigirlo: selector de
+  empresa (decisión #1), buscador, interruptor de tema y menú de la cuenta.
 - Administración va en el menú de la cuenta, separada del trabajo diario.
 - **Command palette (⌘K)** con búsqueda global. Pegar un hash ahí debe llevar directo a la operación. Es la función que más van a usar.
 - Detalles en panel lateral deslizante, no en página nueva — así no se pierde el contexto de la tabla.
@@ -394,9 +412,8 @@ color.
 
 **Lo que no quiero**
 
-- Fondos oscuros o paneles negros en cualquier parte de la aplicación
-- Modo oscuro
 - El acento usado como fondo de secciones grandes — es acento, no relleno
+- El dorado sobre algo que se pueda pulsar: ahí manda el azul
 - Tarjetas con sombras grandes y bordes muy redondeados por defecto de Tailwind
 - Gráficas decorativas que no responden una pregunta concreta
 - Animaciones de entrada en tablas y listas
@@ -465,11 +482,13 @@ existe hoy, y por qué. Sirve para que nadie construya contra una versión vieja
 
 ### Decisiones de la clienta
 
-| Qué cambió          | Antes                           | Ahora                                                            | Motivo                                                                                                                     |
-| ------------------- | ------------------------------- | ---------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
-| **Color de acento** | Dorado `#C4922A`                | Azul `#1E40AF`                                                   | A la clienta no le gustó el dorado en la interfaz. El dorado se queda en los PDF y el logo                                 |
-| **Barra lateral**   | Fija a la izquierda, colapsable | No hay: la navegación está en el encabezado                      | Duplicaba el mosaico de módulos de la portada y se comía 200 px de ancho en pantallas que son, sobre todo, tablas          |
-| **Portada**         | No estaba definida              | Saludo, buscador y mosaico de módulos, con más aire que el resto | La clienta pidió un estilo de intranet tipo ShortPoint para el inicio, conservando la densidad en las pantallas de trabajo |
+| Qué cambió          | Antes                                      | Ahora                                                                  | Motivo                                                                                                                                                                                                                                                                      |
+| ------------------- | ------------------------------------------ | ---------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **Color de acento** | Dorado `#C4922A`                           | Azul `#1E40AF`                                                         | A la clienta no le gustó el dorado en la interfaz. El dorado se queda en los PDF y el logo                                                                                                                                                                                  |
+| **Barra lateral**   | Fija a la izquierda, colapsable            | Vuelve, colapsable (2026-08-22)                                        | Se quitó por el ancho que robaba en las tablas; el cliente la quiere de vuelta como en su referencia visual. Vuelve **plegable**, que resuelve el motivo original                                                                                                           |
+| **Modo oscuro**     | Prohibido, tres veces en el brief          | Tres estados: claro, oscuro y seguir al sistema (2026-08-22)           | Lo pidió el cliente                                                                                                                                                                                                                                                         |
+| **Dorado**          | Acento de marca, luego descartado por azul | Convive con el azul, cada uno con su oficio (2026-08-22)               | El cliente quiere ver su marca. El azul se queda con lo accionable porque el dorado sobre blanco no da contraste suficiente                                                                                                                                                 |
+| **Portada**         | No estaba definida                         | Saludo, fila de cifras, acción requerida, atajos y movimiento reciente | Primero se pidió un estilo tipo ShortPoint; después, el del panel de la segunda referencia. El mosaico de módulos salió al volver la barra lateral: repetir la navegación en la portada no aportaba nada, y en su lugar quedaron **atajos**, que son acciones y no destinos |
 
 ### Correcciones técnicas
 

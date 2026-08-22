@@ -1,6 +1,7 @@
 import type { Metadata, Viewport } from 'next';
 import { Inter, JetBrains_Mono } from 'next/font/google';
 import { Toaster } from 'sonner';
+import { SCRIPT_TEMA } from '@/lib/tema';
 import { Proveedores } from './proveedores';
 import './globals.css';
 
@@ -38,6 +39,12 @@ export const viewport: Viewport = {
 export default function RaizLayout({ children }: { children: React.ReactNode }) {
   return (
     <html lang="es" className={`${interfaz.variable} ${monoespaciada.variable}`}>
+      <head>
+        {/* Antes del primer pintado: sin esto la página aparece en claro y salta a
+            oscuro cuando React monta. Es de los pocos sitios donde bloquear el
+            render es exactamente lo que se quiere. */}
+        <script dangerouslySetInnerHTML={{ __html: SCRIPT_TEMA }} />
+      </head>
       <body>
         <Proveedores>{children}</Proveedores>
         <Toaster position="bottom-right" closeButton richColors />

@@ -286,7 +286,7 @@ function Pastilla({
       className={cn(
         'h-9 rounded-pill border px-3.5 text-[12.5px] font-medium transition-colors',
         activa
-          ? 'border-acento bg-acento text-superficie'
+          ? 'border-acento bg-acento text-sobre-acento'
           : 'border-borde bg-superficie text-grafito hover:border-borde-fuerte hover:text-tinta',
       )}
     >

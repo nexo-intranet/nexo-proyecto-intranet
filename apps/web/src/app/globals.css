@@ -1,31 +1,42 @@
 @import 'tailwindcss';
 
 /**
- * Sistema de diseño — dos ritmos, un solo lenguaje.
+ * Sistema de diseño — dos ritmos, dos temas, un solo lenguaje.
  *
- * Nexo es dos cosas a la vez, y el diseño tiene que servir a las dos.
+ * Nexo es dos cosas a la vez y el diseño sirve a las dos. **La portada** es una
+ * intranet: alguien llega en la mañana, quiere saber qué le toca y entrar a lo suyo
+ * en dos clics. **Las pantallas de trabajo** son un back-office donde se pasan ocho
+ * horas moviendo plata de terceros: ahí manda la densidad. Comparten paleta,
+ * tipografía y tarjetas; cambian el ritmo.
  *
- * **La portada** es una intranet: alguien llega en la mañana, quiere saber qué le
- * toca hoy y entrar a lo suyo en dos clics. Ahí manda el aire, la tipografía
- * grande y las formas suaves. Es el ritmo que pidió la clienta.
+ * ── Los colores y de dónde salen ────────────────────────────────────────────
  *
- * **Las pantallas de trabajo** son un back-office: alguien pasa ocho horas
- * moviendo plata de terceros. Ahí manda la densidad — veinte filas por pantalla,
- * cifras alineadas, nada que robe espacio. La referencia no es una aplicación
- * bonita, es un libro contable bien llevado.
+ * El logo de Nexo es **dorado sobre negro**, y el cliente pidió que la marca se
+ * vea. Pero el dorado no puede ser el color de lo accionable: sobre blanco tiene
+ * mal contraste, y para arreglarlo hay que oscurecerlo tanto que deja de parecerse
+ * al logo.
  *
- * Comparten paleta, tipografía y tarjetas. Cambian el ritmo, no el idioma.
+ * Así que hay dos familias, y cada una tiene un oficio:
  *
- * Tres reglas que gobiernan todo lo demás:
- *   · El papel tiene tinte y las tarjetas son blancas. Por eso flotan solas, sin
- *     necesidad de sombra. La profundidad la da el contraste, no el desenfoque.
- *   · El color significa algo. Azul es accionable o activo; coral es urgente;
- *     verde es conciliado. Lo único que se pinta para decorar es `decorativo`,
- *     y por eso lleva ese nombre: nunca toca un elemento que se pueda hacer clic.
- *   · Los grises son fríos, con tinte violeta. Con un acento azul, un gris cálido
- *     se ve sucio.
+ *   · `acento` (azul) es lo **funcional**: botón primario, foco, elemento activo,
+ *     enlace. Si algo se puede pulsar, es azul.
+ *   · `marca` (dorado) es la **identidad**: fondos muy sutiles, filetes, el sello de
+ *     la empresa. Nunca sobre algo que se pueda pulsar, porque entonces compite con
+ *     el azul y ninguno de los dos significa nada.
  *
- * No hay modo oscuro. Es una decisión de la clienta, no un pendiente.
+ * Los grises son **neutros**, no fríos ni cálidos. Es lo que permite que el azul y
+ * el dorado convivan sin que uno de los dos se vea sucio.
+ *
+ * ── Los dos temas ───────────────────────────────────────────────────────────
+ *
+ * El tema oscuro se agregó a petición del cliente (2026-08-22), revirtiendo la
+ * decisión original del brief. No es una inversión de los colores claros: los
+ * oscuros bajan de saturación y el acento **sube** de luminosidad, porque el azul
+ * de estilógrafo sobre negro no se lee.
+ *
+ * El tema se elige con `data-theme` en `<html>`. Sin elección explícita se sigue
+ * al sistema. Ese atributo lo pone un script antes del primer pintado — si se
+ * esperara a React, la página aparecería en claro y saltaría a oscuro.
  *
  * OJO CON LA SINTAXIS: en Tailwind 4 estos tokens se usan como `bg-acento`,
  * `text-grafito`, `border-borde`. La forma `bg-[--color-acento]` es de Tailwind 3
@@ -33,40 +44,48 @@
  */
 
 @theme {
-  /* ── Papel: el fondo tiene tinte; las tarjetas, no ──────────────────────── */
-  /* Lavanda muy claro. Es lo que hace que una tarjeta blanca se vea encima. */
-  --color-papel: #f4f5fb;
+  /* ── Papel: superficies, de la más baja a la más alta ────────────────────── */
+  --color-papel: #f6f7f9;
   --color-superficie: #ffffff;
-  /* Dentro de una tarjeta blanca: encabezados de tabla, filas alternas. */
-  --color-superficie-alt: #f5f6fc;
-  /* Campos de formulario: van hundidos, un punto más oscuros que su entorno. */
-  --color-campo: #f5f6fc;
+  --color-superficie-alt: #f3f4f6;
+  --color-campo: #f3f4f6;
 
   /* ── Bordes: cuatro pesos, no uno ───────────────────────────────────────── */
-  --color-borde: #e4e6f2;
-  --color-borde-suave: #eff0f8;
-  --color-borde-fuerte: #c9cce3;
+  --color-borde: #e4e6eb;
+  --color-borde-suave: #eff1f4;
+  --color-borde-fuerte: #cbd0d9;
 
   /* ── Tinta: cuatro niveles de texto, cada uno con su oficio ─────────────── */
-  --color-tinta: #101a47;
-  --color-grafito: #4a5378;
-  /* 4,65:1 sobre blanco. El valor anterior (#8a92b5) daba 3,07:1 y no pasaba AA,
-     justo en el texto más pequeño del sistema: los encabezados de columna. */
-  --color-tenue: #6b7396;
-  /* Solo para deshabilitado y marcas de agua, nunca para texto que haya que leer. */
-  --color-apagado: #c0c5dc;
+  --color-tinta: #111827;
+  --color-grafito: #4b5563;
+  --color-tenue: #6b7280;
+  --color-apagado: #9ca3af;
 
-  /* ── Acento: azul de estilógrafo, no azul de SaaS ───────────────────────── */
+  /* ── Acento: lo funcional. Azul. ────────────────────────────────────────── */
   --color-acento: #1e40af;
   --color-acento-fuerte: #16307f;
   --color-acento-borde: #bfd0f5;
-  --color-acento-suave: #edf2fe;
+  --color-acento-suave: #eef2ff;
 
-  /* ── Decorativo: el único color sin significado ─────────────────────────── */
-  /* Periwinkle. Círculos, tramas de puntos, curvas de la portada. Si aparece en
-     algo en lo que se pueda hacer clic, está mal usado. */
-  --color-decorativo: #7c83e8;
-  --color-decorativo-suave: #e6e8fb;
+  /* ── Marca: la identidad. Dorado del logo. ──────────────────────────────── */
+  /* Nunca sobre algo que se pueda pulsar: ahí manda el acento. */
+  --color-marca: #c8912e;
+  --color-marca-fuerte: #a5761f;
+  --color-marca-borde: #e8cf9a;
+  --color-marca-suave: #fdf7ea;
+
+  /* Decorativo: las formas de la portada. El único color sin significado. */
+  --color-decorativo: #c8912e;
+  --color-decorativo-suave: #f6ead2;
+
+  /**
+   * Texto sobre un fondo de color.
+   *
+   * Existe porque `superficie` cambia con el tema y esto no: un botón azul lleva
+   * texto blanco en los dos temas. Usar `text-superficie` aquí funcionaba en claro
+   * y ponía texto oscuro sobre azul en oscuro.
+   */
+  --color-sobre-acento: #ffffff;
 
   /* ── Sellos: el color como estado, nunca como adorno ────────────────────── */
   --color-exito: #0f7a3d;
@@ -75,31 +94,130 @@
   --color-alerta: #b45309;
   --color-alerta-suave: #fffaeb;
   --color-alerta-borde: #fde3b0;
-  /* Coral, no ladrillo: es el rojo de «acción requerida» de la referencia. */
   --color-peligro: #d92d3e;
   --color-peligro-fuerte: #b3202f;
   --color-peligro-suave: #fdeef0;
   --color-peligro-borde: #f8c9cf;
 
   /* ── Radios: dos escalas ────────────────────────────────────────────────── */
-  /* Las tres primeras son para trabajar: contenidas, se sienten técnicas. */
   --radius-sm: 6px;
   --radius-md: 8px;
   --radius-lg: 12px;
-  /* Estas dos son de la portada: tarjetas grandes y pastillas. */
   --radius-xl: 20px;
   --radius-pill: 999px;
 
   /* ── Sombras: solo para lo que flota de verdad ──────────────────────────── */
-  /* Las tarjetas no llevan sombra — el papel con tinte ya las separa. Esto es
-     para lo que se despega de la página: menús, paneles, modales. */
-  --shadow-tarjeta: 0 1px 2px rgb(16 26 71 / 0.04);
-  --shadow-flotante: 0 8px 28px -8px rgb(16 26 71 / 0.14), 0 2px 8px -3px rgb(16 26 71 / 0.08);
-  --shadow-panel: -8px 0 24px -8px rgb(16 26 71 / 0.1);
+  --shadow-tarjeta: 0 1px 2px rgb(17 24 39 / 0.04);
+  --shadow-flotante: 0 8px 28px -8px rgb(17 24 39 / 0.14), 0 2px 8px -3px rgb(17 24 39 / 0.08);
+  --shadow-panel: -8px 0 24px -8px rgb(17 24 39 / 0.1);
 
   --font-sans:
     var(--fuente-interfaz), Inter, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
   --font-mono: var(--fuente-mono), 'JetBrains Mono', 'SF Mono', Menlo, monospace;
+}
+
+/**
+ * Tema oscuro.
+ *
+ * Se aplica de dos maneras y el orden importa: primero por preferencia del sistema
+ * —solo cuando nadie eligió explícitamente claro—, después por el atributo, que
+ * siempre gana. Así el interruptor funciona en las dos direcciones.
+ */
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme='claro']) {
+    --color-papel: #0b0d12;
+    --color-superficie: #14171f;
+    --color-superficie-alt: #1b1f29;
+    --color-campo: #1b1f29;
+
+    --color-borde: #262b37;
+    --color-borde-suave: #1e222c;
+    --color-borde-fuerte: #384154;
+
+    --color-tinta: #e8eaf0;
+    --color-grafito: #b0b7c6;
+    --color-tenue: #8a91a6;
+    --color-apagado: #5c6478;
+
+    /* El azul sube de luminosidad: el de estilógrafo sobre negro no se lee. */
+    --color-acento: #6b95f7;
+    --color-acento-fuerte: #8fb0f9;
+    --color-acento-borde: #2c4586;
+    --color-acento-suave: #172344;
+
+    --color-marca: #d9a441;
+    --color-marca-fuerte: #e8bd6b;
+    --color-marca-borde: #4a3818;
+    --color-marca-suave: #1f1a0e;
+
+    --color-decorativo: #d9a441;
+    --color-decorativo-suave: #2a2213;
+
+    /* Sobre azul claro, el texto oscuro se lee mejor que el blanco. */
+    --color-sobre-acento: #0b0d12;
+
+    --color-exito: #4ade80;
+    --color-exito-suave: #10251a;
+    --color-exito-borde: #1f5137;
+    --color-alerta: #fbbf24;
+    --color-alerta-suave: #241c0c;
+    --color-alerta-borde: #57411a;
+    --color-peligro: #f87171;
+    --color-peligro-fuerte: #fca5a5;
+    --color-peligro-suave: #2a1416;
+    --color-peligro-borde: #5e2429;
+
+    /* En oscuro las sombras casi no se ven: la profundidad la dan los bordes. */
+    --shadow-tarjeta: none;
+    --shadow-flotante: 0 8px 28px -8px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+    --shadow-panel: -8px 0 24px -8px rgb(0 0 0 / 0.5);
+  }
+}
+
+:root[data-theme='oscuro'] {
+  --color-papel: #0b0d12;
+  --color-superficie: #14171f;
+  --color-superficie-alt: #1b1f29;
+  --color-campo: #1b1f29;
+
+  --color-borde: #262b37;
+  --color-borde-suave: #1e222c;
+  --color-borde-fuerte: #384154;
+
+  --color-tinta: #e8eaf0;
+  --color-grafito: #b0b7c6;
+  --color-tenue: #8a91a6;
+  --color-apagado: #5c6478;
+
+  --color-acento: #6b95f7;
+  --color-acento-fuerte: #8fb0f9;
+  --color-acento-borde: #2c4586;
+  --color-acento-suave: #172344;
+
+  --color-marca: #d9a441;
+  --color-marca-fuerte: #e8bd6b;
+  --color-marca-borde: #4a3818;
+  --color-marca-suave: #1f1a0e;
+
+  --color-decorativo: #d9a441;
+  --color-decorativo-suave: #2a2213;
+
+  --color-sobre-acento: #0b0d12;
+
+  --color-exito: #4ade80;
+  --color-exito-suave: #10251a;
+  --color-exito-borde: #1f5137;
+  --color-alerta: #fbbf24;
+  --color-alerta-suave: #241c0c;
+  --color-alerta-borde: #57411a;
+  --color-peligro: #f87171;
+  --color-peligro-fuerte: #fca5a5;
+  --color-peligro-suave: #2a1416;
+  --color-peligro-borde: #5e2429;
+
+  --shadow-tarjeta: none;
+  --shadow-flotante: 0 8px 28px -8px rgb(0 0 0 / 0.6), 0 2px 8px -3px rgb(0 0 0 / 0.4);
+  --shadow-panel: -8px 0 24px -8px rgb(0 0 0 / 0.5);
 }
 
 @layer base {
@@ -109,6 +227,18 @@
 
   html {
     -webkit-text-size-adjust: 100%;
+    /* Le dice al navegador de qué color pintar sus propios controles y barras. */
+    color-scheme: light;
+  }
+
+  @media (prefers-color-scheme: dark) {
+    html:not([data-theme='claro']) {
+      color-scheme: dark;
+    }
+  }
+
+  html[data-theme='oscuro'] {
+    color-scheme: dark;
   }
 
   body {
@@ -128,8 +258,6 @@
     border-radius: var(--radius-sm);
   }
 
-  /* h1 y h2 son los de las pantallas de trabajo, que es donde más se usan. La
-     portada usa .titulo-portada y .titulo-seccion, que sí van en grande. */
   h1 {
     font-size: 19px;
     font-weight: 600;
@@ -144,11 +272,16 @@
     color: var(--color-tinta);
   }
 
+  ::selection {
+    background-color: var(--color-acento-suave);
+    color: var(--color-tinta);
+  }
+
   /**
    * Movimiento reducido.
    *
-   * Hay gente que marca esto en el sistema operativo porque el movimiento le
-   * produce mareo o migraña. No es una preferencia estética: se respeta.
+   * Hay gente que marca esto porque el movimiento le produce mareo o migraña. No es
+   * una preferencia estética: se respeta.
    */
   @media (prefers-reduced-motion: reduce) {
     *,
@@ -159,11 +292,6 @@
       transition-duration: 0.01ms !important;
       scroll-behavior: auto !important;
     }
-  }
-
-  ::selection {
-    background-color: var(--color-acento-suave);
-    color: var(--color-acento-fuerte);
   }
 
   /* Scrollbar discreta: en tablas densas, una barra gruesa roba ancho útil. */
@@ -186,9 +314,8 @@
   /**
    * Las cifras son ciudadanas de primera clase.
    *
-   * Monoespaciada con dígitos de ancho fijo, para que una columna de montos se
-   * lea de un vistazo: el ojo compara posiciones, no dígitos. Sin esto, "1.111"
-   * y "9.999" ocupan anchos distintos y la columna deja de ser una columna.
+   * Monoespaciada con dígitos de ancho fijo, para que una columna de montos se lea
+   * de un vistazo: el ojo compara posiciones, no dígitos.
    */
   .cifra {
     font-family: var(--font-mono);
@@ -198,7 +325,7 @@
     letter-spacing: -0.01em;
   }
 
-  /** Hash de transacción: la huella de la operación. Siempre igual, en todas partes. */
+  /** Hash de transacción: la huella de la operación. Igual en todas partes. */
   .hash {
     font-family: var(--font-mono);
     font-size: 12px;
@@ -222,26 +349,36 @@
     color: var(--color-grafito);
   }
 
-  /**
-   * El saludo de la portada.
-   *
-   * Grande de verdad. Es lo único en todo el sistema que se permite este tamaño,
-   * y solo aparece una vez: en la primera pantalla del día.
-   */
+  /** El saludo de la portada. Lo único que se permite este tamaño. */
   .titulo-portada {
-    font-size: clamp(34px, 4.4vw, 52px);
+    font-size: clamp(28px, 3.4vw, 40px);
     font-weight: 700;
-    line-height: 1.06;
-    letter-spacing: -0.035em;
+    line-height: 1.1;
+    letter-spacing: -0.03em;
     color: var(--color-tinta);
   }
 
-  /* Título de sección de la portada. Va con su barra de color al lado. */
+  /* Título de sección. Va con su barra de color al lado. */
   .titulo-seccion {
-    font-size: clamp(22px, 2.4vw, 30px);
+    font-size: clamp(18px, 2vw, 22px);
     font-weight: 700;
-    line-height: 1.15;
-    letter-spacing: -0.025em;
+    line-height: 1.2;
+    letter-spacing: -0.02em;
     color: var(--color-tinta);
+  }
+
+  /**
+   * El velo dorado de la marca.
+   *
+   * Es el «muy sutil» que pidió el cliente: un lavado del dorado del logo detrás de
+   * una sección, tan tenue que no compite con el contenido. Si se nota como color,
+   * está demasiado fuerte.
+   */
+  .velo-marca {
+    background-image: radial-gradient(
+      120% 100% at 50% 0%,
+      color-mix(in srgb, var(--color-marca) 12%, transparent) 0%,
+      transparent 60%
+    );
   }
 }

@@ -2,6 +2,7 @@
 
 import { useRouter } from 'next/navigation';
 import { useEffect, useState } from 'react';
+import { BarraLateral } from '@/components/layout/barra-lateral';
 import { BarraSuperior } from '@/components/layout/barra-superior';
 import { PaletaComandos } from '@/components/layout/paleta-comandos';
 import { ErrorDeApi } from '@/lib/api/cliente';
@@ -11,9 +12,10 @@ import { useSesion } from '@/lib/sesion';
 /**
  * Marco de la aplicación.
  *
- * Una sola barra arriba y todo el ancho para el contenido. La barra lateral se
- * quitó: duplicaba el mosaico de la portada y le robaba 200px a pantallas que son,
- * en su mayoría, tablas de datos. Su navegación se mudó al encabezado.
+ * Barra lateral con la navegación y barra superior con el contexto. La lateral
+ * volvió por decisión del cliente (2026-08-22) después de haberse quitado; vuelve
+ * **colapsable**, que es lo que resuelve el motivo por el que se había ido: en una
+ * pantalla de tablas densas, 200px de ancho pesan.
  *
  * Que aquí se redirija al ingreso es comodidad de navegación, no seguridad: el
  * backend rechaza igual cualquier petición sin sesión.
@@ -58,12 +60,14 @@ export default function LayoutAplicacion({ children }: { children: React.ReactNo
 
   if (isLoading) {
     return (
-      <div className="flex h-dvh flex-col">
-        <div className="h-16 border-b border-borde bg-superficie" />
-        <div className="mx-auto max-w-[1240px] space-y-4 px-5 py-14 lg:px-8">
-          <div className="mx-auto h-12 w-[420px] max-w-full animate-pulse rounded-lg bg-superficie" />
-          <div className="mx-auto h-11 w-[520px] max-w-full animate-pulse rounded-pill bg-superficie" />
-          <div className="mx-auto h-24 w-full max-w-[760px] animate-pulse rounded-xl bg-superficie" />
+      <div className="flex h-dvh">
+        <div className="w-[212px] shrink-0 border-r border-borde bg-superficie" />
+        <div className="flex min-w-0 flex-1 flex-col">
+          <div className="h-16 border-b border-borde bg-superficie" />
+          <div className="space-y-4 p-6">
+            <div className="h-10 w-[320px] max-w-full animate-pulse rounded-lg bg-superficie" />
+            <div className="h-24 w-full animate-pulse rounded-xl bg-superficie" />
+          </div>
         </div>
       </div>
     );
@@ -74,18 +78,25 @@ export default function LayoutAplicacion({ children }: { children: React.ReactNo
       {/* Primera parada del tabulador: saltar la navegación y entrar al contenido. */}
       <a
         href="#contenido"
-        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-acento focus:px-4 focus:py-2 focus:text-[13px] focus:text-superficie"
+        className="sr-only focus:not-sr-only focus:absolute focus:left-4 focus:top-4 focus:z-50 focus:rounded-md focus:bg-acento focus:px-4 focus:py-2 focus:text-[13px] focus:text-sobre-acento"
       >
         Saltar al contenido
       </a>
 
-      <BarraSuperior sesion={sesion} onAbrirBuscador={() => setBuscadorAbierto(true)} />
+      <div className="flex min-h-0 flex-1">
+        <BarraLateral sesion={sesion} />
 
-      {/* El marco tiene altura fija y el contenido hace su propio scroll: es lo que
-          permite que una tabla densa fije su encabezado mientras corren las filas. */}
-      <main id="contenido" tabIndex={-1} className="min-h-0 flex-1 overflow-auto">
-        {children}
-      </main>
+        <div className="flex min-w-0 flex-1 flex-col">
+          <BarraSuperior sesion={sesion} onAbrirBuscador={() => setBuscadorAbierto(true)} />
+
+          {/* El marco tiene altura fija y el contenido hace su propio scroll: es lo
+              que permite que una tabla densa fije su encabezado mientras corren las
+              filas. */}
+          <main id="contenido" tabIndex={-1} className="min-h-0 flex-1 overflow-auto">
+            {children}
+          </main>
+        </div>
+      </div>
 
       <PaletaComandos
         sesion={sesion}

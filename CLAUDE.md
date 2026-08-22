@@ -43,7 +43,9 @@ Monorepo: apps/api, apps/web, packages/shared
 - Documentos legales (facturas, órdenes de pago, nómina) nunca se editan ni se borran — se anulan y se reemiten
 - Todo cambio queda en el audit log, que es append-only
 - RBAC se valida en el backend, no solo se oculta en el frontend
-- Interfaz blanca estilo fintech — dorado solo como acento, sin modo oscuro
+- Dos familias de color: **azul** para lo accionable, **dorado** para la marca (sutil,
+  nunca sobre algo que se pulse). Modo oscuro con tres estados: claro, oscuro y
+  seguir al sistema
 - Todo el texto de la UI en español
 - Archivos subidos: solo PDF/JPG/PNG verificados por magic bytes, bucket privado,
   servidos siempre por el backend con URL firmada — nunca por enlace directo

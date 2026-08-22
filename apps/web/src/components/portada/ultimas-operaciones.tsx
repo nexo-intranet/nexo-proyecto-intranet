@@ -66,7 +66,7 @@ export function UltimasOperaciones({ empresaId }: { empresaId: string | null }) 
           </p>
           <Link
             href="/operaciones"
-            className="mt-4 inline-flex h-10 items-center rounded-md bg-acento px-4 text-[13px] font-medium text-superficie transition-colors hover:bg-acento-fuerte"
+            className="mt-4 inline-flex h-10 items-center rounded-md bg-acento px-4 text-[13px] font-medium text-sobre-acento transition-colors hover:bg-acento-fuerte"
           >
             Registrar una operación
           </Link>

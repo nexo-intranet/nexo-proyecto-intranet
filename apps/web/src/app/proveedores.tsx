@@ -4,6 +4,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useState } from 'react';
 import { ErrorDeApi } from '@/lib/api/cliente';
 import { ProveedorEmpresa } from '@/lib/empresa';
+import { ProveedorTema } from '@/lib/tema';
 
 export function Proveedores({ children }: { children: React.ReactNode }) {
   const [cliente] = useState(
@@ -25,7 +26,9 @@ export function Proveedores({ children }: { children: React.ReactNode }) {
 
   return (
     <QueryClientProvider client={cliente}>
-      <ProveedorEmpresa>{children}</ProveedorEmpresa>
+      <ProveedorTema>
+        <ProveedorEmpresa>{children}</ProveedorEmpresa>
+      </ProveedorTema>
     </QueryClientProvider>
   );
 }
