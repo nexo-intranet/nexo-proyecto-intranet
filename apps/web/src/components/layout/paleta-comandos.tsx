@@ -2,10 +2,20 @@
 
 import * as Dialog from '@radix-ui/react-dialog';
 import type { SesionActual } from '@nexo/shared';
-import { ETIQUETA_MODULO, RUTA_MODULO } from '@nexo/shared';
+import {
+  ETIQUETA_MODULO,
+  RUTA_MODULO,
+  abreviarHash,
+  formatear,
+  normalizarHash,
+  pareceHash,
+  type OperacionResumen,
+} from '@nexo/shared';
+import { useQuery } from '@tanstack/react-query';
 import { CornerDownLeft, Search } from 'lucide-react';
 import { useRouter } from 'next/navigation';
 import { useEffect, useMemo, useState } from 'react';
+import { peticion } from '@/lib/api/cliente';
 import { useEmpresa } from '@/lib/empresa';
 import { modulosVisibles } from '@/lib/sesion';
 import { cn } from '@/lib/utils';
@@ -39,7 +49,7 @@ export function PaletaComandos({
   onCambiarAbierto: (abierto: boolean) => void;
 }) {
   const router = useRouter();
-  const { cambiarEmpresa } = useEmpresa();
+  const { empresaId, cambiarEmpresa } = useEmpresa();
   const [consulta, setConsulta] = useState('');
   const [seleccionado, setSeleccionado] = useState(0);
 
@@ -52,8 +62,36 @@ export function PaletaComandos({
     }
   }, [abierto, consultaInicial]);
 
+  const texto = consulta.trim();
+
+  /**
+   * El gancho del brief §5: pegar un hash y caer en la operación.
+   *
+   * Solo dispara cuando lo escrito **parece** un hash. Consultar el API con cada
+   * tecleo de «operaciones» sería una petición por letra para no encontrar nada.
+   */
+  const buscandoHash = pareceHash(texto);
+
+  const { data: porHash, isFetching } = useQuery({
+    queryKey: ['paleta-hash', empresaId, normalizarHash(texto)],
+    enabled: abierto && buscandoHash && Boolean(empresaId),
+    queryFn: () =>
+      peticion<OperacionResumen[]>(
+        `operaciones/buscar?hash=${encodeURIComponent(normalizarHash(texto))}`,
+        { empresaId },
+      ),
+  });
+
   const resultados = useMemo<Resultado[]>(() => {
-    const texto = consulta.trim().toLowerCase();
+    const filtro = texto.toLowerCase();
+
+    const operaciones: Resultado[] = (porHash ?? []).map((operacion) => ({
+      id: `operacion-${operacion.id}`,
+      titulo: operacion.hash ? abreviarHash(operacion.hash, 14, 8) : operacion.cliente.nombre,
+      detalle: `${operacion.cliente.nombre} · ${formatear(operacion.gananciaCOP, 'COP')}`,
+      grupo: 'Operaciones',
+      ejecutar: () => router.push(`/operaciones?operacion=${operacion.id}`),
+    }));
 
     const modulos: Resultado[] = modulosVisibles(sesion).map((modulo) => ({
       id: `modulo-${modulo}`,
@@ -71,14 +109,17 @@ export function PaletaComandos({
     }));
 
     const todos = [...modulos, ...empresas];
-    if (!texto) return todos;
+    const coincidencias = filtro
+      ? todos.filter(
+          (resultado) =>
+            resultado.titulo.toLowerCase().includes(filtro) ||
+            resultado.detalle?.toLowerCase().includes(filtro),
+        )
+      : todos;
 
-    return todos.filter(
-      (resultado) =>
-        resultado.titulo.toLowerCase().includes(texto) ||
-        resultado.detalle?.toLowerCase().includes(texto),
-    );
-  }, [consulta, sesion, router, cambiarEmpresa]);
+    // Las operaciones van primero: quien pegó un hash vino por eso, no por un módulo.
+    return [...operaciones, ...coincidencias];
+  }, [texto, porHash, sesion, router, cambiarEmpresa]);
 
   const cerrar = () => {
     onCambiarAbierto(false);
@@ -138,7 +179,9 @@ export function PaletaComandos({
           <div className="max-h-[320px] overflow-auto p-1.5">
             {resultados.length === 0 ? (
               <p className="px-2.5 py-6 text-center text-[13px] text-grafito">
-                Sin resultados para «{consulta}».
+                {buscandoHash && isFetching
+                  ? 'Buscando esa transacción…'
+                  : `Sin resultados para «${consulta}».`}
               </p>
             ) : (
               grupos.map((grupo) => (

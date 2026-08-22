@@ -26,13 +26,6 @@ export function EncabezadoPagina({
   );
 }
 
-/** Ancho y márgenes estándar del contenido de una pantalla de trabajo. */
-export function Contenedor({ children, className }: { children: ReactNode; className?: string }) {
-  return (
-    <div className={cn('mx-auto max-w-[1240px] px-5 py-6 lg:px-8', className)}>{children}</div>
-  );
-}
-
 /**
  * Estado vacío.
  *

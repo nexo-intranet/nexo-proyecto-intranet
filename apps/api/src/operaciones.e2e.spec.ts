@@ -532,5 +532,27 @@ describe('Operaciones y dispersión, de punta a punta', () => {
 
       expect(respuesta.body.error.mensaje).toContain('ejecutados');
     });
+    /**
+     * El formulario deja fuera los campos opcionales que la persona no llenó, en vez
+     * de mandarlos como cadena vacía. Esta prueba fija ese contrato: si algún día el
+     * esquema deja de aceptar la ausencia de `hash`, `red` o `cantidad`, se entera
+     * aquí y no en producción con un formulario que se niega a enviarse.
+     */
+    it('acepta una operación con solo lo obligatorio', async () => {
+      const respuesta = await post('/operaciones', {
+        clienteId,
+        valorCompra: '500000.00',
+        monedaCompra: 'COP',
+        valorVenta: '650000.00',
+        monedaVenta: 'COP',
+        fechaOperacion: new Date().toISOString(),
+        estado: 'REGISTRADA',
+      }).expect(201);
+
+      expect(respuesta.body.gananciaCOP).toBe('150000.00');
+      expect(respuesta.body.hash).toBeNull();
+      expect(respuesta.body.red).toBeNull();
+      expect(respuesta.body.dispersion).toBeNull();
+    });
   });
 });
