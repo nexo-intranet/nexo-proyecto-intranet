@@ -148,7 +148,9 @@ describe('Aislamiento por empresa en PostgreSQL', () => {
       'Destinatario',
       'Dispersion',
       'DispersionDestino',
+      'Egreso',
       'Operacion',
+      'OrdenPago',
       'ReglaDispersion',
       'ReglaDispersionDestino',
       'UsuarioEmpresa',
@@ -291,6 +293,26 @@ describe('AuditLog append-only', () => {
     );
 
     expect(permisos.rows[0]?.puedeActualizar).toBe(false);
+    expect(permisos.rows[0]?.puedeBorrar).toBe(false);
+  });
+
+  /**
+   * Una orden de pago se anula, no se borra.
+   *
+   * Anular es un UPDATE que deja la fila con su motivo. Borrarla dejaría un hueco en
+   * la serie de consecutivos que nadie sabe explicar, así que el permiso de DELETE
+   * simplemente no se otorga: es la base de datos la que lo impide, no una regla que
+   * el código tenga que acordarse de respetar.
+   */
+  it('la aplicación puede anular una orden de pago, pero no borrarla', async () => {
+    const permisos = await comoApp((cliente) =>
+      cliente.query<{ puedeActualizar: boolean; puedeBorrar: boolean }>(
+        'SELECT has_table_privilege(current_user, \'"OrdenPago"\', \'UPDATE\') AS "puedeActualizar", ' +
+          'has_table_privilege(current_user, \'"OrdenPago"\', \'DELETE\') AS "puedeBorrar"',
+      ),
+    );
+
+    expect(permisos.rows[0]?.puedeActualizar).toBe(true);
     expect(permisos.rows[0]?.puedeBorrar).toBe(false);
   });
 });

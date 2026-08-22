@@ -109,6 +109,10 @@ model EmpresaAdministrada {
   dispersiones       Dispersion[]
   dispersionDestinos DispersionDestino[]
 
+  // Etapa 3
+  egresos     Egreso[]
+  ordenesPago OrdenPago[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -154,6 +158,9 @@ model Usuario {
   empresas            UsuarioEmpresa[]
   permisos            PermisoModulo[]
   operacionesAnuladas Operacion[]      @relation("operacionAnuladaPor")
+  egresosAnulados     Egreso[]         @relation("egresoAnuladoPor")
+  ordenesEmitidas     OrdenPago[]      @relation("ordenEmitidaPor")
+  ordenesAnuladas     OrdenPago[]      @relation("ordenAnuladaPor")
   sesiones            SesionRefresh[]
   codigosRespaldo     CodigoRespaldo[]
   auditLogs           AuditLog[]
@@ -437,6 +444,7 @@ model Destinatario {
   empresa  EmpresaAdministrada      @relation(fields: [empresaId], references: [id])
   reglas   ReglaDispersionDestino[]
   destinos DispersionDestino[]
+  egresos  Egreso[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -547,4 +555,140 @@ model DispersionDestino {
 
   @@index([empresaId, estado])
   @@index([dispersionId])
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa 3 — Egresos
+//
+// Estrena el patrón que después reusan la nómina (etapa 5) y la facturación
+// (etapa 6): un registro operativo que emite un documento legal con consecutivo.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Pago por un intangible: licencia, servicio digital, derechos.
+/// Es un registro operativo — el documento legal es su `OrdenPago`.
+model Egreso {
+  id        String @id @default(cuid())
+  empresaId String
+
+  concepto       String
+  tipoIntangible TipoIntangible
+  descripcion    String?
+
+  // ── A quién se le pagó ────────────────────────────────────────────────────
+  /// Copia del nombre al momento del egreso. Si mañana corrigen el catálogo, la
+  /// orden ya emitida tiene que seguir diciendo a quién se le pagó realmente.
+  beneficiario   String
+  /// Enlace opcional al catálogo de la etapa 2, cuando el beneficiario ya está.
+  /// Opcional a propósito: obligar a llenar un catálogo antes de registrar el
+  /// primer egreso frena justo lo que el módulo viene a agilizar.
+  destinatarioId String?
+
+  // ── La plata ──────────────────────────────────────────────────────────────
+  // Regla 2 del brief: monto, moneda y —si aplica— la tasa y el equivalente en
+  // pesos, congelados al momento del egreso. Nunca recalcular con la de hoy.
+  monto      Decimal  @db.Decimal(18, 2)
+  moneda     Moneda
+  tasaCambio Decimal? @db.Decimal(18, 6)
+  /// Calculado y persistido al guardar, nunca derivado en cada lectura.
+  montoCOP   Decimal  @db.Decimal(18, 2)
+
+  fecha  DateTime
+  estado EstadoEgreso @default(REGISTRADO)
+
+  motivoAnulacion String?
+  anuladoEn       DateTime?
+  anuladoPorId    String?
+
+  empresa      EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  destinatario Destinatario?       @relation(fields: [destinatarioId], references: [id])
+  anuladoPor   Usuario?            @relation("egresoAnuladoPor", fields: [anuladoPorId], references: [id])
+  ordenes      OrdenPago[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([empresaId, fecha(sort: Desc)])
+  @@index([empresaId, estado])
+  @@index([destinatarioId])
+}
+
+/// La orden de pago: el documento legal. No se edita ni se borra.
+///
+/// **No lleva `deletedAt`**, y es la única tabla del sistema sin él (excepción a la
+/// regla 4 del brief). Si un documento con consecutivo pudiera desaparecer de las
+/// consultas, la serie quedaría con huecos que nadie sabe explicar.
+model OrdenPago {
+  id        String @id @default(cuid())
+  empresaId String
+  egresoId  String
+
+  /// Lo que se imprime: «OP-000042». Único por empresa, para siempre.
+  consecutivo String
+  /// El número suelto, para ordenar sin parsear el texto.
+  numero      Int
+
+  estado EstadoOrdenPago @default(VIGENTE)
+
+  /// **Lo que decía el documento el día que se emitió.**
+  ///
+  /// Congela el emisor —nombre, NIT, dirección, municipio—, el beneficiario, el
+  /// concepto y los montos. El PDF se regenera desde aquí, así que cambiar hoy la
+  /// dirección de la empresa no altera una orden emitida el año pasado.
+  ///
+  /// Lo inmutable es el contenido, no los bytes (docs/ETAPA-03.md §1.1).
+  contenido Json
+
+  /// sha256 del PDF emitido. Deja constancia del archivo exacto.
+  hashArchivo  String?
+  /// Clave en el bucket. Nula hasta la etapa 6, que es cuando se monta R2.
+  claveArchivo String?
+
+  emitidaEn    DateTime @default(now())
+  emitidaPorId String
+
+  motivoAnulacion String?
+  anuladaEn       DateTime?
+  anuladaPorId    String?
+
+  /// Si esta orden reemplaza a una anulada, cuál. Encadena el historial.
+  /// Es `@unique` para que una anulada se reemita **una sola vez**: sin eso, dos
+  /// reemisiones dejarían dos documentos vigentes por un mismo egreso.
+  reemplazaAId String? @unique
+
+  empresa        EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  egreso         Egreso              @relation(fields: [egresoId], references: [id])
+  emitidaPor     Usuario             @relation("ordenEmitidaPor", fields: [emitidaPorId], references: [id])
+  anuladaPor     Usuario?            @relation("ordenAnuladaPor", fields: [anuladaPorId], references: [id])
+  reemplazaA     OrdenPago?          @relation("reemision", fields: [reemplazaAId], references: [id])
+  reemplazadaPor OrdenPago?          @relation("reemision")
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, consecutivo])
+  @@index([empresaId, estado])
+  @@index([empresaId, numero(sort: Desc)])
+  @@index([egresoId])
+}
+
+enum TipoIntangible {
+  // TODO [CONFIRMAR] Lista de arranque: el brief solo da ejemplos, no una
+  // taxonomía. Si con el tiempo la mitad cae en OTRO, la lista real del cliente
+  // se lee sola en los datos.
+  LICENCIA_SOFTWARE
+  SERVICIO_DIGITAL
+  DERECHOS
+  SUSCRIPCION
+  OTRO
+}
+
+enum EstadoEgreso {
+  REGISTRADO // vigente, con su orden de pago emitida
+  ANULADO // sin efecto, se conserva con su motivo
+}
+
+enum EstadoOrdenPago {
+  VIGENTE
+  ANULADA
 }
