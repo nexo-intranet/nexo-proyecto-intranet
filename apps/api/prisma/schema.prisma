@@ -347,11 +347,29 @@ model Cliente {
   /// Últimos cuatro dígitos, para mostrar «•••• 4821» sin descifrar en cada fila.
   numeroDocFinal   String
 
-  /// Define las fechas del calendario tributario (Etapa 6).
-  ultimoDigitoNit Int?
-  municipio       String?
-  email           String?
-  telefono        String?
+  // ── Lo que el calendario tributario necesita (etapa 6) ────────────────────
+  // Son tres datos: el último dígito del NIT, el tipo de contribuyente y —solo
+  // para ICA— el municipio. Se piden desde ya, con la tabla casi vacía: pedirlos
+  // en la etapa 6 obligaría a completarlos a mano, cliente por cliente.
+  /// Define las fechas del calendario tributario.
+  ultimoDigitoNit     Int?
+  tipoContribuyente   TipoContribuyente?
+  municipio           String?
+  /// El ICA es municipal. El código DANE identifica el municipio sin ambigüedad;
+  /// «Medellín» escrito a mano no cruza con ninguna tabla.
+  codigoDaneMunicipio String?
+
+  direccion      String?
+  nombreContacto String?
+  email          String?
+  telefono       String?
+
+  /// Activo o retirado del portafolio.
+  ///
+  /// Distinto de `deletedAt`, y a propósito: un cliente retirado no debe aparecer
+  /// al registrar una operación nueva, pero su historial tiene que seguir
+  /// consultable. Un soft delete lo escondería de las dos cosas.
+  activo Boolean @default(true)
 
   empresa     EmpresaAdministrada @relation(fields: [empresaId], references: [id])
   operaciones Operacion[]

@@ -577,4 +577,73 @@ describe('Operaciones y dispersión, de punta a punta', () => {
       expect(respuesta.body.destinos[0].porcentaje).toBeNull();
     });
   });
+
+  describe('la ficha del cliente', () => {
+    it('el historial de operaciones del cliente pagina en servidor', async () => {
+      const respuesta = await get(`/clientes/${clienteId}/operaciones?porPagina=10`).expect(200);
+
+      expect(respuesta.body.total).toBeGreaterThan(0);
+      expect(respuesta.body.porPagina).toBe(10);
+      expect(
+        (respuesta.body.datos as Array<{ cliente: { id: string } }>).every(
+          (operacion) => operacion.cliente.id === clienteId,
+        ),
+      ).toBe(true);
+    });
+
+    it('el resumen dice cuánto ha movido y desde cuándo', async () => {
+      const respuesta = await get(`/clientes/${clienteId}/resumen`).expect(200);
+
+      expect(respuesta.body.operaciones).toBeGreaterThan(0);
+      expect(typeof respuesta.body.gananciaCOP).toBe('string');
+      expect(respuesta.body.desde).not.toBeNull();
+    });
+
+    /**
+     * El cambio de la etapa 4: retirar un cliente ya no es un soft delete.
+     *
+     * Antes desaparecía de todas partes, incluido el historial de las operaciones
+     * que ya tenía — que es justo lo que alguien quiere ver cuando pregunta por un
+     * cliente retirado.
+     */
+    it('un cliente retirado conserva su historial', async () => {
+      await request(app.getHttpServer())
+        .delete(`/api/v1/clientes/${clienteId}`)
+        .set('Cookie', cookies)
+        .set('X-Empresa-Id', EMPRESA)
+        .set('X-CSRF-Token', csrf)
+        .expect(204);
+
+      const cliente = await get(`/clientes/${clienteId}`).expect(200);
+      expect(cliente.body.activo).toBe(false);
+
+      const historial = await get(`/clientes/${clienteId}/operaciones`).expect(200);
+      expect(historial.body.total).toBeGreaterThan(0);
+    });
+
+    it('el filtro por estado separa activos de retirados', async () => {
+      const activos = await get('/clientes?activo=true').expect(200);
+      const ids = (activos.body.datos as Array<{ id: string }>).map((fila) => fila.id);
+
+      expect(ids).not.toContain(clienteId);
+    });
+
+    it('guarda el tipo de contribuyente que necesitará el calendario tributario', async () => {
+      const respuesta = await patch(`/clientes/${clienteId}`, {
+        tipoContribuyente: 'PERSONA_JURIDICA',
+        codigoDaneMunicipio: '05001',
+        nombreContacto: 'Persona de contacto',
+      }).expect(200);
+
+      expect(respuesta.body.tipoContribuyente).toBe('PERSONA_JURIDICA');
+      expect(respuesta.body.codigoDaneMunicipio).toBe('05001');
+    });
+
+    it('el documento no sale completo en ninguna respuesta', async () => {
+      const respuesta = await get(`/clientes/${clienteId}`).expect(200);
+
+      expect(JSON.stringify(respuesta.body)).not.toContain('901458327');
+      expect(respuesta.body.numeroDocFinal).toBe('8327');
+    });
+  });
 });

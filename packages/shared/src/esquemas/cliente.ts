@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { emailEsquema, idEsquema, paginacionEsquema, textoRequerido } from './comunes.js';
-import { tipoDocumentoEsquema } from '../enums/index.js';
+import { tipoContribuyenteEsquema, tipoDocumentoEsquema } from '../enums/index.js';
 import { soloDigitos } from '../utilidades/nit.js';
 
 export const TIPOS_CLIENTE = ['PERSONA_NATURAL', 'PERSONA_JURIDICA'] as const;
@@ -30,16 +30,46 @@ export const crearClienteEsquema = z.object({
   tipo: tipoClienteEsquema,
   tipoDoc: tipoDocumentoEsquema,
   numeroDoc: numeroDocumentoEsquema,
+
+  /**
+   * Lo que el calendario tributario va a necesitar (etapa 6).
+   *
+   * Opcional, para no frenar el registro cuando todavía no se sabe. Pero se pide
+   * desde ya: completarlo después, cliente por cliente, cuesta mucho más que
+   * preguntarlo al crear.
+   */
+  tipoContribuyente: tipoContribuyenteEsquema.optional(),
   municipio: z.string().trim().max(120).optional(),
+  /** El ICA es municipal, y el código DANE identifica el municipio sin ambigüedad. */
+  codigoDaneMunicipio: z
+    .string()
+    .trim()
+    .regex(/^\d{5}$/, 'El código DANE tiene cinco dígitos')
+    .optional(),
+
+  direccion: z.string().trim().max(200).optional(),
+  nombreContacto: z.string().trim().max(200).optional(),
   email: emailEsquema.optional(),
   telefono: z.string().trim().max(40).optional(),
 });
 export type DatosCrearCliente = z.infer<typeof crearClienteEsquema>;
 
-export const actualizarClienteEsquema = crearClienteEsquema.partial().omit({ numeroDoc: true });
+/**
+ * El documento no se edita.
+ *
+ * Cambiarlo convertiría el registro en otra persona conservando su historial de
+ * operaciones. Si el documento estaba mal, se crea el cliente correcto.
+ */
+export const actualizarClienteEsquema = crearClienteEsquema
+  .partial()
+  .omit({ numeroDoc: true })
+  .extend({ activo: z.boolean().optional() });
 export type DatosActualizarCliente = z.infer<typeof actualizarClienteEsquema>;
 
-export const filtroClientesEsquema = paginacionEsquema;
+export const filtroClientesEsquema = paginacionEsquema.extend({
+  tipo: tipoClienteEsquema.optional(),
+  activo: z.coerce.boolean().optional(),
+});
 export type FiltroClientes = z.infer<typeof filtroClientesEsquema>;
 
 export interface Cliente {
@@ -50,9 +80,23 @@ export interface Cliente {
   /** Últimos cuatro dígitos. El número completo no sale del servidor. */
   numeroDocFinal: string;
   ultimoDigitoNit: number | null;
+  tipoContribuyente: z.infer<typeof tipoContribuyenteEsquema> | null;
   municipio: string | null;
+  codigoDaneMunicipio: string | null;
+  direccion: string | null;
+  nombreContacto: string | null;
   email: string | null;
   telefono: string | null;
+  activo: boolean;
+}
+
+/** Lo que ha movido un cliente. Alimenta la cabecera de su ficha. */
+export interface ResumenCliente {
+  operaciones: number;
+  gananciaCOP: string;
+  /** Fecha de su primera operación. Null si todavía no tiene ninguna. */
+  desde: string | null;
+  ultimaOperacion: string | null;
 }
 
 export const clienteIdEsquema = z.object({ clienteId: idEsquema });

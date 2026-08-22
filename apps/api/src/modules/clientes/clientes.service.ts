@@ -1,16 +1,22 @@
 import { Injectable } from '@nestjs/common';
-import type {
-  Cliente,
-  DatosActualizarCliente,
-  DatosCrearCliente,
-  FiltroClientes,
-  RespuestaPaginada,
+import {
+  aDecimal,
+  type Cliente,
+  type DatosActualizarCliente,
+  type DatosCrearCliente,
+  type FiltroClientes,
+  type FiltroOperaciones,
+  type OperacionResumen,
+  type ParametrosPaginacion,
+  type RespuestaPaginada,
+  type ResumenCliente,
 } from '@nexo/shared';
 import { conflicto, noEncontrado } from '../../common/errores';
 import { AuditService } from '../../core/audit/audit.service';
 import { CifradoService } from '../../core/crypto/cifrado.service';
 import { conEmpresaImplicita } from '../../core/prisma/empresa-implicita';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { OperacionesService } from '../operaciones/operaciones.service';
 
 /**
  * Clientes.
@@ -29,6 +35,7 @@ export class ClientesService {
     private readonly prisma: PrismaService,
     private readonly cifrado: CifradoService,
     private readonly audit: AuditService,
+    private readonly operacionesService: OperacionesService,
   ) {}
 
   /** Nunca incluye `numeroDocCifrado` ni `numeroDocHash`: no salen del servidor. */
@@ -39,14 +46,21 @@ export class ClientesService {
     tipoDoc: true,
     numeroDocFinal: true,
     ultimoDigitoNit: true,
+    tipoContribuyente: true,
     municipio: true,
+    codigoDaneMunicipio: true,
+    direccion: true,
+    nombreContacto: true,
     email: true,
     telefono: true,
+    activo: true,
   } as const;
 
   async listar(filtro: FiltroClientes): Promise<RespuestaPaginada<Cliente>> {
     const where = {
       deletedAt: null,
+      ...(filtro.tipo ? { tipo: filtro.tipo } : {}),
+      ...(filtro.activo === undefined ? {} : { activo: filtro.activo }),
       ...(filtro.busqueda
         ? { nombre: { contains: filtro.busqueda, mode: 'insensitive' as const } }
         : {}),
@@ -154,25 +168,77 @@ export class ClientesService {
     return cliente as Cliente;
   }
 
+  /**
+   * Retirar del portafolio.
+   *
+   * Marca `activo = false` en vez de hacer un soft delete. La diferencia importa:
+   * un cliente retirado no debe aparecer al registrar una operación nueva, pero su
+   * historial tiene que seguir consultable — que es justo lo que alguien va a
+   * mirar cuando pregunte por él. Un `deletedAt` lo escondería de las dos cosas.
+   *
+   * Por eso tampoco hace falta la vieja restricción de «no se puede si tiene
+   * operaciones»: retirarlo ya no rompe nada.
+   */
   async desactivar(id: string): Promise<void> {
     const anterior = await this.obtener(id);
+    if (!anterior.activo) return;
 
-    const conOperaciones = await this.prisma.db.operacion.count({
-      where: { clienteId: id, deletedAt: null, estado: { not: 'ANULADA' } },
-    });
-    if (conOperaciones > 0) {
-      throw conflicto(
-        `No se puede eliminar: el cliente tiene ${conOperaciones} operación(es) registradas.`,
-      );
-    }
-
-    await this.prisma.db.cliente.update({ where: { id }, data: { deletedAt: new Date() } });
+    await this.prisma.db.cliente.update({ where: { id }, data: { activo: false } });
 
     await this.audit.registrar({
-      accion: 'ELIMINAR',
+      accion: 'ACTUALIZAR',
       entidad: 'Cliente',
       entidadId: id,
       valorAnterior: anterior,
+      valorNuevo: { ...anterior, activo: false },
     });
+  }
+
+  /**
+   * Historial de operaciones de un cliente.
+   *
+   * Delega la consulta al mismo sitio que la tabla de Operaciones en vez de armar
+   * su propio `where`: si mañana cambia lo que se muestra de una operación, cambia
+   * en un solo lugar.
+   */
+  async operaciones(
+    id: string,
+    parametros: ParametrosPaginacion,
+  ): Promise<RespuestaPaginada<OperacionResumen>> {
+    await this.obtener(id); // 404 antes de listar, si es de otra empresa
+
+    return this.operacionesService.listar({
+      ...parametros,
+      clienteId: id,
+      dir: parametros.dir,
+    } as FiltroOperaciones);
+  }
+
+  /** Cuánto ha movido, desde cuándo. Alimenta la cabecera de su ficha. */
+  async resumen(id: string): Promise<ResumenCliente> {
+    await this.obtener(id);
+
+    const where = { clienteId: id, deletedAt: null, estado: { not: 'ANULADA' as const } };
+
+    const [agregado, primera, ultima] = await Promise.all([
+      this.prisma.db.operacion.aggregate({ where, _count: true, _sum: { gananciaCOP: true } }),
+      this.prisma.db.operacion.findFirst({
+        where,
+        orderBy: { fechaOperacion: 'asc' },
+        select: { fechaOperacion: true },
+      }),
+      this.prisma.db.operacion.findFirst({
+        where,
+        orderBy: { fechaOperacion: 'desc' },
+        select: { fechaOperacion: true },
+      }),
+    ]);
+
+    return {
+      operaciones: agregado._count,
+      gananciaCOP: (agregado._sum.gananciaCOP ?? aDecimal('0')).toFixed(2),
+      desde: primera?.fechaOperacion.toISOString() ?? null,
+      ultimaOperacion: ultima?.fechaOperacion.toISOString() ?? null,
+    };
   }
 }

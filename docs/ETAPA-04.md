@@ -1,6 +1,7 @@
 # Etapa 4 — Clientes · Esquema y API
 
-> **Propuesta. Pendiente de confirmar antes de escribir código.**
+> **Construida (2026-08-22),** con las tres recomendaciones. El calendario tributario
+> queda anotado para la Etapa 6.
 > Contexto: `docs/ARQUITECTURA.md` §4 · Seguridad vinculante: `docs/SEGURIDAD.md`
 
 El brief pide tres cosas de este módulo (§6, módulo 06):

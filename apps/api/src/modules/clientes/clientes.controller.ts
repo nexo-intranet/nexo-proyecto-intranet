@@ -15,10 +15,14 @@ import {
   buscarClienteEsquema,
   crearClienteEsquema,
   filtroClientesEsquema,
+  paginacionEsquema,
   type Cliente,
   type DatosActualizarCliente,
   type DatosCrearCliente,
   type FiltroClientes,
+  type OperacionResumen,
+  type ParametrosPaginacion,
+  type ResumenCliente,
   type RespuestaPaginada,
 } from '@nexo/shared';
 import { Auditar, Permiso } from '../../common/decoradores';
@@ -49,6 +53,23 @@ export class ClientesController {
   @Permiso('CLIENTES', 'ver')
   obtener(@Param('id') id: string): Promise<Cliente> {
     return this.clientes.obtener(id);
+  }
+
+  /** Historial de operaciones del cliente, paginado en servidor. */
+  @Get(':id/operaciones')
+  @Permiso('CLIENTES', 'ver')
+  operaciones(
+    @Param('id') id: string,
+    @Query(zod(paginacionEsquema)) parametros: ParametrosPaginacion,
+  ): Promise<RespuestaPaginada<OperacionResumen>> {
+    return this.clientes.operaciones(id, parametros);
+  }
+
+  /** Cuánto ha movido y desde cuándo. Cabecera de la ficha del cliente. */
+  @Get(':id/resumen')
+  @Permiso('CLIENTES', 'ver')
+  resumen(@Param('id') id: string): Promise<ResumenCliente> {
+    return this.clientes.resumen(id);
   }
 
   @Post()
