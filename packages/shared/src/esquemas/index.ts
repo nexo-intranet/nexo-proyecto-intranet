@@ -6,3 +6,4 @@ export * from './auditoria.js';
 export * from './cliente.js';
 export * from './operacion.js';
 export * from './dispersion.js';
+export * from './egreso.js';

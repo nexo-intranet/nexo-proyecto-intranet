@@ -59,6 +59,8 @@ import type { Entorno } from './config/configuracion';
     CifradoService,
     AuditService,
     ConsecutivoService,
+    // Lo estrena la etapa 3: hasta ahora nadie fuera de core generaba documentos.
+    PdfService,
     JwtModule,
   ],
 })
