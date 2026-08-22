@@ -9,10 +9,12 @@ Documentos derivados, ya aprobados por el cliente:
 - `docs/ETAPA-01.md` — cimientos: esquema núcleo, auth, RBAC, audit log (terminada)
 - `docs/ETAPA-02.md` — operaciones, clientes y dispersión (terminada)
 - `docs/ETAPA-03.md` — egresos y órdenes de pago (terminada)
-- `docs/ETAPA-04.md` — clientes (terminada, salvo el calendario tributario → etapa 6)
+- `docs/ETAPA-04.md` — clientes (terminada; el calendario tributario llegó con la 6a)
 - `docs/ETAPA-05.md` — empleados y nómina documental (terminada)
-- `docs/ETAPA-06.md` — contabilidad, partida en tres. **6a en construcción; 6b
-  (facturación con Siigo) aplazada a la espera de credenciales; 6c espera a la 6b**
+- `docs/ETAPA-06.md` — contabilidad, partida en tres. **6a terminada; 6b (facturación
+  con Siigo) aplazada a la espera de credenciales; 6c espera a la 6b**
+- `docs/ETAPA-07.md` — cumplimiento: políticas versionadas, aceptaciones y UIAF.
+  **Propuesta aprobada, construcción aplazada** a pedido de la clienta
 - `docs/SEGURIDAD.md` — **vinculante en todas las etapas**: RLS, manejo de secretos,
   superficie pública de la API, sesión y datos personales. Su §7 tiene el checklist
   obligatorio de cada PR.

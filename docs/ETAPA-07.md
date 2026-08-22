@@ -1,6 +1,6 @@
 # Etapa 7 — Cumplimiento · Esquema y API
 
-> **Propuesta. Pendiente de confirmar antes de escribir código** (regla de `CLAUDE.md`).
+> **Propuesta aprobada el 2026-08-22. Construcción aplazada** — ver §10.
 > Deriva del brief §05 y de `docs/SEGURIDAD.md` §5.
 
 ---
@@ -436,12 +436,39 @@ tabla de plazos, los deduce.
 
 ---
 
-## 9. Preguntas abiertas
+## 9. Decisiones tomadas (2026-08-22)
 
-1. **La revocación (§3.3)** — ¿entra en esta etapa o se deja anotada?
-2. **¿Publicar una versión nueva invalida las aceptaciones anteriores?** Es lo que
-   propongo en §3.2 y es lo correcto legalmente, pero tiene un costo operativo real:
-   obliga a volver a pedir aceptación. Conviene que la clienta lo sepa antes, no
-   después de publicar.
-3. **El sector del sujeto obligado**, para el formato de SIREL. No bloquea la etapa,
-   pero conviene ir preguntándolo.
+Las dos preguntas que bloqueaban esta etapa quedaron resueltas. Se escriben aquí
+porque son las que dan forma al módulo entero:
+
+### 9.1 Publicar una versión nueva invalida las aceptaciones anteriores — **sí**
+
+Es lo propuesto en §3.2. Las aceptaciones anteriores se conservan como evidencia de
+lo que se firmó en su momento, pero dejan de autorizar consultas nuevas: hay que
+volver a pedir aceptación de la versión vigente.
+
+Consecuencia operativa que hay que respetar al construir: **publicar es caro**, porque
+obliga a re-pedir aceptación a todo el mundo. La previsualización de la publicación
+—cuántas aceptaciones vigentes va a invalidar— no es un adorno, es lo que evita que
+alguien publique una corrección de puntuación sin saber lo que desencadena.
+
+### 9.2 La revocación entra en esta etapa — **sí**
+
+`revocadaEn` y `motivoRevocacion` en `AceptacionPolitica`, con su ruta. Una aceptación
+revocada deja de contar como vigente pero **sigue existiendo**: borrarla eliminaría la
+prueba de que en su momento sí hubo autorización, que es un dato que también hay que
+poder mostrar.
+
+### 9.3 Sigue abierta
+
+**El sector del sujeto obligado**, para el formato del archivo de cargue a SIREL. No
+bloquea la etapa: el `UiafReportFormatter` se construye igual y la implementación
+provisional documenta qué asume. Conviene ir preguntándolo.
+
+---
+
+## 10. Estado
+
+> **Propuesta aprobada, construcción aplazada (2026-08-22)** a pedido de la clienta,
+> que tiene cosas que verificar antes de arrancar. El esquema y las rutas de arriba
+> son los confirmados; cuando se retome, se empieza por la migración de la 7a.
