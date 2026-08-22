@@ -11,6 +11,7 @@ Documentos derivados, ya aprobados por el cliente:
 - `docs/ETAPA-03.md` — egresos y órdenes de pago (terminada)
 - `docs/ETAPA-04.md` — clientes (terminada, salvo el calendario tributario → etapa 6)
 - `docs/ETAPA-05.md` — empleados y nómina documental (terminada)
+- `docs/ETAPA-06.md` — contabilidad: propuesta partida en 6a/6b/6c, **pendiente de confirmar**
 - `docs/SEGURIDAD.md` — **vinculante en todas las etapas**: RLS, manejo de secretos,
   superficie pública de la API, sesión y datos personales. Su §7 tiene el checklist
   obligatorio de cada PR.
