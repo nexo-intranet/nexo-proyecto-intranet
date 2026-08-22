@@ -14,3 +14,4 @@ export * from './esquemas/index.js';
 export * from './utilidades/nit.js';
 export * from './dispersion/index.js';
 export * from './operaciones/index.js';
+export * from './nomina/index.js';

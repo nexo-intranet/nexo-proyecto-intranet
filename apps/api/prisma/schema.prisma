@@ -113,6 +113,12 @@ model EmpresaAdministrada {
   egresos     Egreso[]
   ordenesPago OrdenPago[]
 
+  // Etapa 5
+  empleados           Empleado[]
+  recibosNomina       ReciboNomina[]
+  conceptosNomina     ConceptoNomina[]
+  documentosLaborales DocumentoLaboral[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -157,10 +163,13 @@ model Usuario {
 
   empresas            UsuarioEmpresa[]
   permisos            PermisoModulo[]
-  operacionesAnuladas Operacion[]      @relation("operacionAnuladaPor")
-  egresosAnulados     Egreso[]         @relation("egresoAnuladoPor")
-  ordenesEmitidas     OrdenPago[]      @relation("ordenEmitidaPor")
-  ordenesAnuladas     OrdenPago[]      @relation("ordenAnuladaPor")
+  operacionesAnuladas Operacion[]        @relation("operacionAnuladaPor")
+  egresosAnulados     Egreso[]           @relation("egresoAnuladoPor")
+  ordenesEmitidas     OrdenPago[]        @relation("ordenEmitidaPor")
+  ordenesAnuladas     OrdenPago[]        @relation("ordenAnuladaPor")
+  recibosEmitidos     ReciboNomina[]     @relation("reciboEmitidoPor")
+  recibosAnulados     ReciboNomina[]     @relation("reciboAnuladoPor")
+  documentosEmitidos  DocumentoLaboral[] @relation("documentoEmitidoPor")
   sesiones            SesionRefresh[]
   codigosRespaldo     CodigoRespaldo[]
   auditLogs           AuditLog[]
@@ -709,4 +718,191 @@ enum EstadoEgreso {
 enum EstadoOrdenPago {
   VIGENTE
   ANULADA
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa 5 — Empleados y nómina documental
+//
+// Segunda aparición del patrón «registro operativo → documento con consecutivo».
+// La diferencia con Egresos: aquí conviven documentos que se congelan (el recibo)
+// con documentos que se generan al vuelo (la carta laboral). Ver docs/ETAPA-05.md §3.
+// ─────────────────────────────────────────────────────────────────────────────
+
+model Empleado {
+  id        String @id @default(cuid())
+  empresaId String
+
+  nombre  String
+  tipoDoc TipoDocumento
+
+  /// Cifrado, igual que en Cliente y Destinatario: es un dato personal (Ley 1581).
+  numeroDocCifrado String
+  numeroDocHash    String
+  numeroDocFinal   String
+
+  cargo        String
+  salarioBase  Decimal   @db.Decimal(18, 2)
+  moneda       Moneda    @default(COP)
+  fechaIngreso DateTime
+  fechaRetiro  DateTime?
+
+  tipoContrato TipoContrato @default(INDEFINIDO)
+
+  // Los imprime la carta laboral y el certificado de ingresos.
+  email     String?
+  telefono  String?
+  direccion String?
+
+  /// Activo o retirado. Distinto de `deletedAt`, por la misma razón que en Cliente:
+  /// un empleado retirado no aparece al liquidar, pero sus recibos siguen ahí.
+  activo Boolean @default(true)
+
+  empresa    EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  recibos    ReciboNomina[]
+  documentos DocumentoLaboral[]
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@unique([empresaId, numeroDocHash])
+  @@index([empresaId, activo])
+  @@index([empresaId, nombre])
+}
+
+/// El recibo de nómina: documento legal con consecutivo.
+///
+/// **Sin `deletedAt`**, igual que OrdenPago: un documento con consecutivo no puede
+/// desaparecer de las consultas sin dejar un hueco en la serie.
+model ReciboNomina {
+  id         String @id @default(cuid())
+  empresaId  String
+  empleadoId String
+
+  /// Lo que se imprime: «RN-000042». Único por empresa, para siempre.
+  consecutivo String
+  numero      Int
+
+  tipoPeriodo   TipoPeriodo
+  periodoInicio DateTime
+  periodoFin    DateTime
+
+  /// Totalizados al liquidar y persistidos, nunca derivados en cada lectura.
+  totalDevengado Decimal @db.Decimal(18, 2)
+  totalDeducido  Decimal @db.Decimal(18, 2)
+  neto           Decimal @db.Decimal(18, 2)
+  moneda         Moneda  @default(COP)
+
+  estado EstadoDocumento @default(VIGENTE)
+
+  /// Lo que decía el documento al emitirse: el emisor, el empleado, su cargo y sus
+  /// conceptos. Cambiar mañana el cargo no altera un recibo de marzo.
+  contenido   Json
+  hashArchivo String?
+
+  emitidoEn    DateTime @default(now())
+  emitidoPorId String
+
+  motivoAnulacion String?
+  anuladoEn       DateTime?
+  anuladoPorId    String?
+
+  /// Si reemplaza a uno anulado, cuál. Único: se reemite una sola vez.
+  reemplazaAId String? @unique
+
+  empresa        EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  empleado       Empleado            @relation(fields: [empleadoId], references: [id])
+  emitidoPor     Usuario             @relation("reciboEmitidoPor", fields: [emitidoPorId], references: [id])
+  anuladoPor     Usuario?            @relation("reciboAnuladoPor", fields: [anuladoPorId], references: [id])
+  reemplazaA     ReciboNomina?       @relation("reemisionRecibo", fields: [reemplazaAId], references: [id])
+  reemplazadoPor ReciboNomina?       @relation("reemisionRecibo")
+  conceptos      ConceptoNomina[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([empresaId, consecutivo])
+  @@index([empresaId, estado])
+  @@index([empresaId, numero(sort: Desc)])
+  /// Un empleado no puede tener dos recibos **vigentes** del mismo período. El
+  /// índice no lo puede expresar solo —los anulados sí se repiten—, así que la
+  /// regla vive en el servicio y esto es lo que la hace rápida de comprobar.
+  @@index([empleadoId, periodoInicio])
+}
+
+/// Una línea del recibo. El concepto es texto libre a propósito: la clienta liquida
+/// escribiendo los valores, no eligiendo de un catálogo cerrado (docs/ETAPA-05.md §1).
+model ConceptoNomina {
+  id        String @id @default(cuid())
+  empresaId String
+  reciboId  String
+
+  tipo     TipoConcepto
+  concepto String
+  valor    Decimal      @db.Decimal(18, 2)
+  orden    Int
+
+  empresa EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  recibo  ReciboNomina        @relation(fields: [reciboId], references: [id])
+
+  @@index([reciboId, orden])
+  /// Para responder «cuánto se pagó de auxilio de transporte en el año» sin abrir
+  /// cada recibo. Esa pregunta llega en Contabilidad.
+  @@index([empresaId, concepto])
+}
+
+/// Carta laboral o certificado de ingresos.
+///
+/// Se generan **al vuelo**, no se congelan: certifican un estado actual, no un hecho
+/// del pasado. Si piden la carta otra vez en junio, la respuesta correcta es la de
+/// junio. Aquí solo queda constancia de que se emitió (docs/ETAPA-05.md §3).
+model DocumentoLaboral {
+  id         String @id @default(cuid())
+  empresaId  String
+  empleadoId String
+
+  tipo TipoDocumentoLaboral
+  /// Solo para el certificado: de qué año son los ingresos que resume.
+  anio Int?
+
+  emitidoEn    DateTime @default(now())
+  emitidoPorId String
+
+  empresa    EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  empleado   Empleado            @relation(fields: [empleadoId], references: [id])
+  emitidoPor Usuario             @relation("documentoEmitidoPor", fields: [emitidoPorId], references: [id])
+
+  @@index([empleadoId, emitidoEn(sort: Desc)])
+  @@index([empresaId, tipo])
+}
+
+enum TipoContrato {
+  INDEFINIDO
+  FIJO
+  OBRA_LABOR
+  PRESTACION_SERVICIOS
+  APRENDIZAJE
+}
+
+enum TipoPeriodo {
+  QUINCENAL
+  MENSUAL
+}
+
+enum TipoConcepto {
+  DEVENGADO
+  DEDUCCION
+}
+
+enum TipoDocumentoLaboral {
+  CARTA_LABORAL
+  CERTIFICADO_INGRESOS
+}
+
+/// Estado de un documento legal. Va aparte de `EstadoOrdenPago` porque el género
+/// cambia —una orden queda «anulada», un recibo «anulado»— y esa etiqueta se
+/// imprime. Compartir el enum obligaría a redactar los mensajes en neutro.
+enum EstadoDocumento {
+  VIGENTE
+  ANULADO
 }
