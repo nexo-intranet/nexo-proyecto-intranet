@@ -45,42 +45,108 @@ export interface OpcionesPeticion {
   signal?: AbortSignal;
 }
 
-export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
-  const { metodo = 'GET', cuerpo, empresaId, signal } = opciones;
+/**
+ * Renovación silenciosa de la sesión.
+ *
+ * El token de acceso dura quince minutos; el de refresco, siete días. Sin esto, a
+ * los quince minutos de trabajo la aplicación mandaba a la pantalla de ingreso
+ * —con su código de dos factores— aunque hubiera una sesión perfectamente válida en
+ * la cookie de refresco. Para alguien que usa esto ocho horas al día, eso son unas
+ * treinta interrupciones diarias.
+ *
+ * **Una sola renovación a la vez, y esto no es una optimización.** El refresco rota
+ * el token y el servidor detecta reuso: presentar dos veces el mismo token revoca
+ * toda la familia de sesiones, porque eso es lo que parece un token robado. Si cinco
+ * peticiones caducan juntas —y caducan juntas, porque comparten el mismo token— y
+ * cada una pidiera su renovación, cuatro llegarían con un token ya consumido y
+ * cerrarían la sesión de verdad. Aquí la primera renueva y las demás esperan su
+ * resultado.
+ */
+let renovacionEnCurso: Promise<boolean> | null = null;
 
+async function renovarSesion(): Promise<boolean> {
+  renovacionEnCurso ??= (async () => {
+    try {
+      const respuesta = await fetch('/api/auth/refrescar', {
+        method: 'POST',
+        credentials: 'same-origin',
+      });
+      return respuesta.ok;
+    } catch {
+      // Sin red no hay renovación posible; que la petición original falle sola.
+      return false;
+    } finally {
+      renovacionEnCurso = null;
+    }
+  })();
+
+  return renovacionEnCurso;
+}
+
+/** Códigos con los que vale la pena intentar renovar antes de rendirse. */
+const RENOVABLES = new Set(['NO_AUTENTICADO', 'TOKEN_EXPIRADO']);
+
+async function enviar(
+  ruta: string,
+  { metodo = 'GET', cuerpo, empresaId, signal }: OpcionesPeticion,
+): Promise<Response> {
   const encabezados: Record<string, string> = {};
   if (cuerpo !== undefined) encabezados['content-type'] = 'application/json';
   if (empresaId) encabezados[HEADER_EMPRESA] = empresaId;
 
   if (metodo !== 'GET') {
+    // Se lee en cada envío, no una sola vez: al renovar, el servidor emite un token
+    // CSRF nuevo, y reintentar con el viejo fallaría por otra razón distinta.
     const csrf = tokenCsrf();
     if (csrf) encabezados[HEADER_CSRF] = csrf;
   }
 
-  const respuesta = await fetch(`/api/${ruta.replace(/^\//, '')}`, {
+  return fetch(`/api/${ruta.replace(/^\//, '')}`, {
     method: metodo,
     headers: encabezados,
     body: cuerpo === undefined ? undefined : JSON.stringify(cuerpo),
     credentials: 'same-origin',
     signal,
   });
+}
 
-  if (respuesta.status === 204) return undefined as T;
+async function leer<T>(
+  respuesta: Response,
+): Promise<{ datos: T; error?: never } | { error: ErrorDeApi }> {
+  if (respuesta.status === 204) return { datos: undefined as T };
 
   const texto = await respuesta.text();
   const datos: unknown = texto ? JSON.parse(texto) : null;
 
-  if (!respuesta.ok) {
-    const error = (datos as ErrorApi)?.error;
-    throw new ErrorDeApi(
+  if (respuesta.ok) return { datos: datos as T };
+
+  const error = (datos as ErrorApi)?.error;
+  return {
+    error: new ErrorDeApi(
       error?.codigo ?? 'ERROR_INTERNO',
       error?.mensaje ?? 'Ocurrió un error inesperado.',
       respuesta.status,
       error?.detalles,
-    );
-  }
+    ),
+  };
+}
 
-  return datos as T;
+export async function peticion<T>(ruta: string, opciones: OpcionesPeticion = {}): Promise<T> {
+  const primera = await leer<T>(await enviar(ruta, opciones));
+  if (!primera.error) return primera.datos;
+
+  // Las rutas de autenticación no se reintentan: si `refrescar` devuelve 401, es
+  // que no hay sesión que renovar, y reintentarlo sería un ciclo.
+  const esAuth = ruta.replace(/^\//, '').startsWith('auth/');
+
+  if (esAuth || !RENOVABLES.has(primera.error.codigo)) throw primera.error;
+
+  if (!(await renovarSesion())) throw primera.error;
+
+  // Un solo reintento. Si vuelve a fallar, la sesión de verdad se acabó.
+  const segunda = await leer<T>(await enviar(ruta, opciones));
+  if (segunda.error) throw segunda.error;
+  return segunda.datos;
 }
 
 /** Construye la cadena de consulta de una colección paginada. */
@@ -94,3 +160,46 @@ export function consulta(parametros: Record<string, string | number | undefined 
 }
 
 export type { RespuestaPaginada };
+
+/**
+ * Descarga un archivo generado por el backend.
+ *
+ * Va aparte de `peticion` porque la respuesta es binaria, no JSON, pero comparte lo
+ * que importa: la sesión, la empresa activa y **la renovación silenciosa**. Sin esto
+ * una descarga que cae justo después de que expira el token de acceso fallaría con
+ * un «no se pudo descargar» que no dice nada.
+ *
+ * Nunca un enlace directo al API: el backend verifica permisos antes de generar un
+ * byte (brief §4.13).
+ */
+export async function descargarArchivo(
+  ruta: string,
+  nombre: string,
+  empresaId: string | null,
+): Promise<void> {
+  const pedir = () =>
+    fetch(`/api/${ruta.replace(/^\//, '')}`, {
+      headers: empresaId ? { [HEADER_EMPRESA]: empresaId } : {},
+      credentials: 'same-origin',
+    });
+
+  let respuesta = await pedir();
+
+  if (respuesta.status === 401 && (await renovarSesion())) {
+    respuesta = await pedir();
+  }
+
+  if (!respuesta.ok) {
+    throw new ErrorDeApi('ERROR_INTERNO', 'No se pudo descargar el archivo.', respuesta.status);
+  }
+
+  const url = URL.createObjectURL(await respuesta.blob());
+  try {
+    const enlace = document.createElement('a');
+    enlace.href = url;
+    enlace.download = nombre;
+    enlace.click();
+  } finally {
+    URL.revokeObjectURL(url);
+  }
+}

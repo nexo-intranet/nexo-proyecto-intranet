@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Distintivo, EncabezadoPagina, EstadoError } from '@/components/patrones';
 import { TablaDatos, type EstadoTabla } from '@/components/tabla/tabla-datos';
 import { Boton } from '@/components/ui/boton';
-import { ErrorDeApi, consulta, peticion } from '@/lib/api/cliente';
+import { ErrorDeApi, consulta, descargarArchivo, peticion } from '@/lib/api/cliente';
 import { useEmpresa } from '@/lib/empresa';
 import { formatearFechaHora } from '@/lib/formato';
 import { cn } from '@/lib/utils';
@@ -190,19 +190,7 @@ export default function PaginaOrdenesPago() {
 /** El PDF pasa por el proxy con la sesión y la empresa activa. Nunca enlace directo. */
 async function descargar(orden: OrdenPagoResumen, empresaId: string | null): Promise<void> {
   try {
-    const respuesta = await fetch(`/api/ordenes-pago/${orden.id}/pdf`, {
-      headers: empresaId ? { 'x-empresa-id': empresaId } : {},
-      credentials: 'same-origin',
-    });
-    if (!respuesta.ok) throw new Error('descarga fallida');
-
-    const blob = await respuesta.blob();
-    const url = URL.createObjectURL(blob);
-    const enlace = document.createElement('a');
-    enlace.href = url;
-    enlace.download = `${orden.consecutivo}.pdf`;
-    enlace.click();
-    URL.revokeObjectURL(url);
+    await descargarArchivo(`ordenes-pago/${orden.id}/pdf`, `${orden.consecutivo}.pdf`, empresaId);
   } catch {
     toast.error('No se pudo descargar la orden.');
   }

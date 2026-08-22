@@ -221,6 +221,23 @@ deshabilitada en producción o detrás de sesión de administrador.
 
 ---
 
+### Renovación silenciosa de la sesión
+
+El token de acceso dura quince minutos; el de refresco, siete días. Cuando una
+petición responde `401` con `NO_AUTENTICADO` o `TOKEN_EXPIRADO`, el cliente HTTP
+pide `POST /auth/refrescar` **una sola vez** y reintenta la petición original. Si la
+renovación falla, ahí sí va a la pantalla de ingreso.
+
+**La renovación es de a una, y no por rendimiento.** El refresco rota el token y el
+servidor detecta reuso: presentar dos veces el mismo revoca toda la familia de
+sesiones, porque es lo que parece un token robado. Como todas las peticiones
+comparten el mismo token de acceso, caducan juntas; sin un candado en el cliente,
+cinco peticiones simultáneas dispararían cinco renovaciones y cuatro llegarían con
+un token ya consumido. El resultado sería cerrar la sesión de verdad y registrar un
+incidente falso.
+
+Está probado en `apps/api/src/sesion.e2e.spec.ts`.
+
 ## 5. Datos personales (Ley 1581 / habeas data)
 
 - Documentos de identidad de empleados y clientes: cifrados con AES-256-GCM. Para

@@ -15,7 +15,7 @@ import { toast } from 'sonner';
 import { Distintivo } from '@/components/patrones';
 import { Boton } from '@/components/ui/boton';
 import { Campo, Entrada } from '@/components/ui/campo';
-import { ErrorDeApi, peticion } from '@/lib/api/cliente';
+import { ErrorDeApi, descargarArchivo, peticion } from '@/lib/api/cliente';
 import { formatearFecha, formatearFechaHora } from '@/lib/formato';
 import { cn } from '@/lib/utils';
 
@@ -207,19 +207,7 @@ function FilaOrden({
   const descargar = async () => {
     setDescargando(true);
     try {
-      const respuesta = await fetch(`/api/ordenes-pago/${orden.id}/pdf`, {
-        headers: empresaId ? { 'x-empresa-id': empresaId } : {},
-        credentials: 'same-origin',
-      });
-      if (!respuesta.ok) throw new Error('descarga fallida');
-
-      const blob = await respuesta.blob();
-      const url = URL.createObjectURL(blob);
-      const enlace = document.createElement('a');
-      enlace.href = url;
-      enlace.download = `${orden.consecutivo}.pdf`;
-      enlace.click();
-      URL.revokeObjectURL(url);
+      await descargarArchivo(`ordenes-pago/${orden.id}/pdf`, `${orden.consecutivo}.pdf`, empresaId);
     } catch {
       toast.error('No se pudo descargar la orden.');
     } finally {
