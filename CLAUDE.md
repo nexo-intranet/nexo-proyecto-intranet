@@ -7,7 +7,8 @@ Documentos derivados, ya aprobados por el cliente:
 
 - `docs/ARQUITECTURA.md` — estructura del monorepo, convenciones y las 10 etapas
 - `docs/ETAPA-01.md` — cimientos: esquema núcleo, auth, RBAC, audit log (terminada)
-- `docs/ETAPA-02.md` — operaciones: propuesta de esquema y rutas, pendiente de confirmar
+- `docs/ETAPA-02.md` — operaciones, clientes y dispersión (terminada)
+- `docs/ETAPA-03.md` — egresos y órdenes de pago: propuesta, **pendiente de confirmar**
 - `docs/SEGURIDAD.md` — **vinculante en todas las etapas**: RLS, manejo de secretos,
   superficie pública de la API, sesión y datos personales. Su §7 tiene el checklist
   obligatorio de cada PR.
