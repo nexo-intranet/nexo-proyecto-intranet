@@ -9,6 +9,7 @@ import {
   type OperacionResumen,
   type ParametrosPaginacion,
   type RespuestaPaginada,
+  type FechaCalendario,
   type ResumenCliente,
 } from '@nexo/shared';
 import { conflicto, noEncontrado } from '../../common/errores';
@@ -16,6 +17,7 @@ import { AuditService } from '../../core/audit/audit.service';
 import { CifradoService } from '../../core/crypto/cifrado.service';
 import { conEmpresaImplicita } from '../../core/prisma/empresa-implicita';
 import { PrismaService } from '../../core/prisma/prisma.service';
+import { CalendarioService } from '../contabilidad/calendario.service';
 import { OperacionesService } from '../operaciones/operaciones.service';
 
 /**
@@ -36,6 +38,7 @@ export class ClientesService {
     private readonly cifrado: CifradoService,
     private readonly audit: AuditService,
     private readonly operacionesService: OperacionesService,
+    private readonly calendario: CalendarioService,
   ) {}
 
   /** Nunca incluye `numeroDocCifrado` ni `numeroDocHash`: no salen del servidor. */
@@ -212,6 +215,29 @@ export class ClientesService {
       clienteId: id,
       dir: parametros.dir,
     } as FiltroOperaciones);
+  }
+
+  /**
+   * El calendario tributario del cliente.
+   *
+   * **Delega en Contabilidad, no duplica la regla**, como pide el brief (§6, módulo
+   * 06). Aquí solo se traducen los datos del cliente a las características que el
+   * calendario sabe cruzar: su último dígito, su tipo de contribuyente y —para el
+   * ICA— su municipio.
+   *
+   * Sin último dígito no hay nada que consultar: es lo que ordena todo el
+   * calendario colombiano. Se devuelve vacío en vez de adivinar uno.
+   */
+  async calendarioTributario(id: string, anio?: number): Promise<FechaCalendario[]> {
+    const cliente = await this.obtener(id);
+    if (cliente.ultimoDigitoNit === null) return [];
+
+    return this.calendario.consultar({
+      anio,
+      ultimoDigito: cliente.ultimoDigitoNit,
+      tipoContribuyente: cliente.tipoContribuyente ?? undefined,
+      codigoDaneMunicipio: cliente.codigoDaneMunicipio ?? undefined,
+    });
   }
 
   /** Cuánto ha movido, desde cuándo. Alimenta la cabecera de su ficha. */

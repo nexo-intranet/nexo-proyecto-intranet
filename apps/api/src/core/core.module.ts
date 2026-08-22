@@ -1,6 +1,8 @@
 import { Global, Module } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { JwtModule } from '@nestjs/jwt';
+import { crearAlmacen } from './archivos/almacenes';
+import { ArchivosService } from './archivos/archivos.service';
 import { AuditService } from './audit/audit.service';
 import { ConsecutivoService } from './consecutivos/consecutivo.service';
 import { ContextoService } from './context/contexto.service';
@@ -43,6 +45,23 @@ import type { Entorno } from './config/configuracion';
         new PrismaService(contexto, config.get('DATABASE_URL', { infer: true })),
     },
     {
+      provide: ArchivosService,
+      inject: [ConfigService],
+      useFactory: (config: ConfigService<Entorno, true>) =>
+        new ArchivosService(
+          crearAlmacen(
+            {
+              endpoint: config.get('S3_ENDPOINT', { infer: true }),
+              region: config.get('S3_REGION', { infer: true }),
+              bucket: config.get('S3_BUCKET', { infer: true }),
+              accessKeyId: config.get('S3_ACCESS_KEY_ID', { infer: true }),
+              secretAccessKey: config.get('S3_SECRET_ACCESS_KEY', { infer: true }),
+            },
+            config.get('NODE_ENV', { infer: true }) === 'production',
+          ),
+        ),
+    },
+    {
       provide: CifradoService,
       inject: [ConfigService],
       useFactory: (config: ConfigService<Entorno, true>) =>
@@ -61,6 +80,8 @@ import type { Entorno } from './config/configuracion';
     ConsecutivoService,
     // Lo estrena la etapa 3: hasta ahora nadie fuera de core generaba documentos.
     PdfService,
+    // Lo estrena la etapa 6a: los soportes de gastos.
+    ArchivosService,
     JwtModule,
   ],
 })

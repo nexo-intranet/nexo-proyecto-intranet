@@ -152,13 +152,48 @@ describe('Aislamiento por empresa en PostgreSQL', () => {
       'DocumentoLaboral',
       'Egreso',
       'Empleado',
+      'Gasto',
       'Operacion',
       'OrdenPago',
       'ReciboNomina',
       'ReglaDispersion',
       'ReglaDispersionDestino',
+      'SolicitudDocumento',
       'UsuarioEmpresa',
     ]);
+  });
+
+  /**
+   * El calendario tributario **no tiene empresaId, y eso es deliberado**.
+   *
+   * Las fechas de la DIAN son las mismas para todo el mundo: no cuelgan de ninguna
+   * empresa. Duplicarlas por empresa sería guardar catorce copias idénticas de la
+   * misma tabla oficial, y ponerles una política obligaría a inventar un dueño.
+   *
+   * Se comprueba explícitamente para que la ausencia se lea como una decisión y no
+   * como el olvido que la prueba de arriba está justamente buscando.
+   */
+  it('el calendario tributario está fuera del aislamiento, a propósito', async () => {
+    const columnas = await comoDueno((cliente) =>
+      cliente.query<{ relname: string }>(
+        `SELECT c.relname
+           FROM pg_class c
+           JOIN pg_attribute a ON a.attrelid = c.oid AND a.attname = 'empresaId'
+          WHERE c.relname IN ('CalendarioTributario', 'ImportacionCalendario')`,
+      ),
+    );
+
+    expect(columnas.rows).toHaveLength(0);
+
+    const politicas = await comoDueno((cliente) =>
+      cliente.query<{ relname: string }>(
+        `SELECT c.relname FROM pg_class c
+          WHERE c.relname IN ('CalendarioTributario', 'ImportacionCalendario')
+            AND c.relrowsecurity`,
+      ),
+    );
+
+    expect(politicas.rows).toHaveLength(0);
   });
 
   it('el rol de la aplicación no puede saltarse las políticas', async () => {

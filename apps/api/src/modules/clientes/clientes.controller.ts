@@ -22,6 +22,7 @@ import {
   type FiltroClientes,
   type OperacionResumen,
   type ParametrosPaginacion,
+  type FechaCalendario,
   type ResumenCliente,
   type RespuestaPaginada,
 } from '@nexo/shared';
@@ -63,6 +64,18 @@ export class ClientesController {
     @Query(zod(paginacionEsquema)) parametros: ParametrosPaginacion,
   ): Promise<RespuestaPaginada<OperacionResumen>> {
     return this.clientes.operaciones(id, parametros);
+  }
+
+  /**
+   * Su calendario tributario.
+   *
+   * La consulta la resuelve Contabilidad: aquí solo se traducen los datos del
+   * cliente a lo que ese módulo sabe cruzar. La regla vive en un solo sitio.
+   */
+  @Get(':id/calendario')
+  @Permiso('CLIENTES', 'ver')
+  calendario(@Param('id') id: string, @Query('anio') anio?: string): Promise<FechaCalendario[]> {
+    return this.clientes.calendarioTributario(id, anio ? Number(anio) : undefined);
   }
 
   /** Cuánto ha movido y desde cuándo. Cabecera de la ficha del cliente. */

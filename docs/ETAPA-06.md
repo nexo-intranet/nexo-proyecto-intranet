@@ -1,6 +1,9 @@
 # Etapa 6 — Contabilidad · Esquema y API
 
-> **Propuesta. Pendiente de confirmar antes de escribir código.**
+> **6a en construcción (2026-08-22). 6b aplazada, 6c en espera.**
+> La 6b —facturación con Siigo— queda **pendiente por decisión de la clienta**: depende
+> de que el proveedor entregue credenciales y no tiene sentido bloquear el avance
+> esperándolas. Se retoma cuando lleguen. La 6c depende de la 6b, así que espera con ella.
 > Contexto: `docs/ARQUITECTURA.md` §4 · Seguridad vinculante: `docs/SEGURIDAD.md`
 
 El brief pide siete cosas de este módulo (§6, módulo 04):
@@ -35,18 +38,23 @@ soportes y que vengo aplazando desde la Etapa 3.
 Es la que más desbloquea: cierra el módulo de Clientes —el calendario que dejamos
 pendiente en la Etapa 4— y llena el panel de obligaciones de la portada.
 
-### 6b · Facturación electrónica
+### 6b · Facturación electrónica — **aplazada**
 
 `Factura`, `FacturaItem`, `ConfigFacturacion`, `LogIntegracion`, la interfaz
 `InvoicingProvider` con Siigo detrás, el reintento y el webhook.
 
-**Depende de que el cliente consiga credenciales**, y eso no lo controlamos
-nosotros. Ver §2.
+**Aplazada por decisión de la clienta (2026-08-22).** Depende de credenciales que
+entrega Siigo, con una espera que no controlamos, y detener el proyecto por eso sería
+peor que retomarla después. Las decisiones de diseño de §4 quedan escritas para
+cuando se retome — no hay que volver a pensarlas.
 
-### 6c · Conciliación y proyecciones
+El resto del sistema no la necesita: nada de lo construido cuelga de una factura.
+
+### 6c · Conciliación y proyecciones — **en espera de la 6b**
 
 Cruzar lo facturado con lo pagado y lo registrado, y proyectar impuestos. Necesita
-que 6a y 6b ya tengan datos: hacerla antes sería cruzar tablas vacías.
+que 6a y 6b ya tengan datos: hacerla antes sería cruzar tablas vacías, y sin la 6b
+no hay nada facturado que conciliar.
 
 ---
 

@@ -119,6 +119,10 @@ model EmpresaAdministrada {
   conceptosNomina     ConceptoNomina[]
   documentosLaborales DocumentoLaboral[]
 
+  // Etapa 6a
+  gastos               Gasto[]
+  solicitudesDocumento SolicitudDocumento[]
+
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
   deletedAt DateTime?
@@ -161,18 +165,19 @@ model Usuario {
   intentosFallidos    Int       @default(0)
   bloqueadoHasta      DateTime?
 
-  empresas            UsuarioEmpresa[]
-  permisos            PermisoModulo[]
-  operacionesAnuladas Operacion[]        @relation("operacionAnuladaPor")
-  egresosAnulados     Egreso[]           @relation("egresoAnuladoPor")
-  ordenesEmitidas     OrdenPago[]        @relation("ordenEmitidaPor")
-  ordenesAnuladas     OrdenPago[]        @relation("ordenAnuladaPor")
-  recibosEmitidos     ReciboNomina[]     @relation("reciboEmitidoPor")
-  recibosAnulados     ReciboNomina[]     @relation("reciboAnuladoPor")
-  documentosEmitidos  DocumentoLaboral[] @relation("documentoEmitidoPor")
-  sesiones            SesionRefresh[]
-  codigosRespaldo     CodigoRespaldo[]
-  auditLogs           AuditLog[]
+  empresas                UsuarioEmpresa[]
+  permisos                PermisoModulo[]
+  operacionesAnuladas     Operacion[]             @relation("operacionAnuladaPor")
+  egresosAnulados         Egreso[]                @relation("egresoAnuladoPor")
+  ordenesEmitidas         OrdenPago[]             @relation("ordenEmitidaPor")
+  ordenesAnuladas         OrdenPago[]             @relation("ordenAnuladaPor")
+  recibosEmitidos         ReciboNomina[]          @relation("reciboEmitidoPor")
+  recibosAnulados         ReciboNomina[]          @relation("reciboAnuladoPor")
+  documentosEmitidos      DocumentoLaboral[]      @relation("documentoEmitidoPor")
+  importacionesCalendario ImportacionCalendario[] @relation("calendarioImportadoPor")
+  sesiones                SesionRefresh[]
+  codigosRespaldo         CodigoRespaldo[]
+  auditLogs               AuditLog[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -380,8 +385,9 @@ model Cliente {
   /// consultable. Un soft delete lo escondería de las dos cosas.
   activo Boolean @default(true)
 
-  empresa     EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  empresa     EmpresaAdministrada  @relation(fields: [empresaId], references: [id])
   operaciones Operacion[]
+  solicitudes SolicitudDocumento[]
 
   createdAt DateTime  @default(now())
   updatedAt DateTime  @updatedAt
@@ -905,4 +911,159 @@ enum TipoDocumentoLaboral {
 enum EstadoDocumento {
   VIGENTE
   ANULADO
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Etapa 6a — Gastos, calendario tributario y solicitudes de documento
+//
+// La facturación electrónica (6b) queda aplazada a la espera de las credenciales
+// de Siigo. Nada de lo de aquí depende de ella.
+// ─────────────────────────────────────────────────────────────────────────────
+
+/// Gasto operativo, con su soporte adjunto.
+model Gasto {
+  id        String @id @default(cuid())
+  empresaId String
+
+  categoria CategoriaGasto
+  concepto  String
+  proveedor String?
+
+  // Regla 2 del brief: monto, moneda y —si aplica— tasa y equivalente en pesos,
+  // congelados al momento del gasto.
+  monto      Decimal  @db.Decimal(18, 2)
+  moneda     Moneda   @default(COP)
+  tasaCambio Decimal? @db.Decimal(18, 6)
+  montoCOP   Decimal  @db.Decimal(18, 2)
+
+  fecha     DateTime
+  /// Si cuenta para la declaración de renta. Lo decide quien registra.
+  deducible Boolean  @default(true)
+
+  /// Clave del soporte en el almacén. **Nunca** se entrega al navegador: el archivo
+  /// se sirve por el backend, que verifica permiso y empresa en cada descarga.
+  soporteClave  String?
+  /// El nombre que traía el archivo. Es para mostrar, nunca para enrutar.
+  soporteNombre String?
+  soporteTipo   String?
+
+  empresa EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([empresaId, fecha(sort: Desc)])
+  @@index([empresaId, categoria])
+}
+
+/// Las fechas del calendario tributario de un año.
+///
+/// **No dice a quién le toca.** Quién queda cubierto por una fila se resuelve al
+/// consultar, cruzando con el último dígito del NIT, el tipo de contribuyente y
+/// —solo en ICA— el municipio del cliente. Guardar la asignación sería duplicar:
+/// el día que un cliente cambie de tipo, esa tabla quedaría mintiendo.
+///
+/// **Sin `empresaId`, y es la única tabla de negocio así.** Las fechas de la DIAN
+/// son las mismas para todo el mundo, así que tampoco lleva RLS. La prueba de
+/// catálogo lo comprueba explícitamente para que no parezca un olvido.
+model CalendarioTributario {
+  id   String @id @default(cuid())
+  anio Int
+
+  tipoObligacion      TipoObligacion
+  /// 0 a 9. Algunas obligaciones agrupan dos dígitos: van dos filas.
+  ultimoDigito        Int
+  /// Nulo cuando la fecha aplica a cualquier tipo de contribuyente.
+  tipoContribuyente   TipoContribuyente?
+  /// Solo para ICA, que es municipal. El código DANE lo identifica sin ambigüedad.
+  codigoDaneMunicipio String?
+
+  fechaLimite DateTime
+  descripcion String?
+
+  /// Qué importación creó esta fila. Permite reemplazar un año sin borrar el
+  /// anterior: se marca la importación vieja como no vigente y se puede volver.
+  importacionId String
+  importacion   ImportacionCalendario @relation(fields: [importacionId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@index([anio, tipoObligacion, ultimoDigito])
+  @@index([importacionId])
+}
+
+/// Una carga del calendario. Versiona el año en vez de sobrescribirlo.
+model ImportacionCalendario {
+  id   String @id @default(cuid())
+  anio Int
+
+  /// Solo una importación vigente por año. Las anteriores quedan para volver atrás.
+  vigente Boolean @default(true)
+  filas   Int
+  nota    String?
+
+  importadoEn    DateTime @default(now())
+  importadoPorId String
+  importadoPor   Usuario  @relation("calendarioImportadoPor", fields: [importadoPorId], references: [id])
+
+  fechas CalendarioTributario[]
+
+  @@index([anio, vigente])
+}
+
+/// Documento que se le pide a un cliente, con su plazo.
+model SolicitudDocumento {
+  id        String @id @default(cuid())
+  empresaId String
+  clienteId String
+
+  documento   String
+  descripcion String?
+  estado      EstadoSolicitud @default(SOLICITADO)
+  fechaLimite DateTime
+
+  /// El archivo que el cliente entregó, cuando llega.
+  archivoClave  String?
+  archivoNombre String?
+  archivoTipo   String?
+  recibidoEn    DateTime?
+
+  empresa EmpresaAdministrada @relation(fields: [empresaId], references: [id])
+  cliente Cliente             @relation(fields: [clienteId], references: [id])
+
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+  deletedAt DateTime?
+
+  @@index([empresaId, estado])
+  @@index([empresaId, fechaLimite])
+  @@index([clienteId])
+}
+
+enum CategoriaGasto {
+  // TODO [CONFIRMAR] Lista de arranque. Si con el tiempo la mitad cae en OTRO, la
+  // taxonomía real del cliente se lee sola en los datos.
+  ARRIENDO
+  SERVICIOS_PUBLICOS
+  NOMINA_ADMINISTRATIVA
+  HONORARIOS
+  TRANSPORTE
+  PAPELERIA
+  TECNOLOGIA
+  IMPUESTOS
+  OTRO
+}
+
+enum TipoObligacion {
+  RENTA
+  RETENCIONES
+  ICA // municipal, no DIAN
+  EXOGENA
+}
+
+enum EstadoSolicitud {
+  SOLICITADO
+  RECIBIDO
+  VENCIDO
 }

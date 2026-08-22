@@ -1,4 +1,5 @@
 import { Module } from '@nestjs/common';
+import { ContabilidadModule } from '../contabilidad/contabilidad.module';
 import { OperacionesModule } from '../operaciones/operaciones.module';
 import { ClientesController } from './clientes.controller';
 import { ClientesService } from './clientes.service';
@@ -8,7 +9,7 @@ import { ClientesService } from './clientes.service';
  * consulta aquí, delega en el servicio que ya sabe cómo se muestra una operación.
  */
 @Module({
-  imports: [OperacionesModule],
+  imports: [OperacionesModule, ContabilidadModule],
   controllers: [ClientesController],
   providers: [ClientesService],
   exports: [ClientesService],

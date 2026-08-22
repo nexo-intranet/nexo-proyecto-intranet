@@ -18,6 +18,7 @@ import { ClientesModule } from './modules/clientes/clientes.module';
 import { EmpresasModule } from './modules/empresas/empresas.module';
 import { DispersionesModule } from './modules/dispersiones/dispersiones.module';
 import { EgresosModule } from './modules/egresos/egresos.module';
+import { ContabilidadModule } from './modules/contabilidad/contabilidad.module';
 import { EmpleadosModule } from './modules/empleados/empleados.module';
 import { OperacionesModule } from './modules/operaciones/operaciones.module';
 import { SaludModule } from './modules/salud/salud.module';
@@ -57,6 +58,7 @@ import { UsuariosModule } from './modules/usuarios/usuarios.module';
     DispersionesModule,
     EgresosModule,
     EmpleadosModule,
+    ContabilidadModule,
   ],
   providers: [
     { provide: APP_GUARD, useClass: ThrottlerGuard },

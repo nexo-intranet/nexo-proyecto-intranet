@@ -8,3 +8,4 @@ export * from './operacion.js';
 export * from './dispersion.js';
 export * from './egreso.js';
 export * from './empleado.js';
+export * from './contabilidad.js';
